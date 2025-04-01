@@ -12,10 +12,9 @@ import (
 func InitRouter(ctx context.Context, engine *gin.Engine) error {
 	// init rpc client
 	// Init other services
-	svc := service.NewServerlessService(config.DB)
 
 	var (
-		apiGroupAuth = engine.Group("/api/v1", middleware.RequestHeader(), middleware.Authentication())
+		apiGroupAuth = engine.Group("/api/v2", middleware.RequestHeader(), middleware.Authentication())
 	)
 
 	{
@@ -26,26 +25,15 @@ func InitRouter(ctx context.Context, engine *gin.Engine) error {
 	}
 
 	{
-		ctl := controllers.NewServerlessController(svc)
-		apiGroupAuth.GET("/endpoints/:endpointId", ctl.FindByEndpointId)
-		apiGroupAuth.POST("/endpoints", ctl.CreateEndpoint)
-		// clean cache
-		// task.RunTransferTasks(ctx, svc)
-	}
+		// gpu resource
+		svc := service.NewGpuResourceService(config.DB)
+		ctl := controllers.NewGpuController(svc)
 
-	{
-		ctl := controllers.NewInferenceController(config.GrpcServer)
-		apiGroupAuth.POST("/endpoints/:endpointId/inference", ctl.Inference)
-	}
-
-	{
-		ctl := controllers.NewTextToImageController(config.GrpcServer)
-		apiGroupAuth.POST("/endpoints/:endpointId/textToImage", ctl.Render)
-	}
-
-	{
-		ctl := controllers.NewImageController(config.GrpcServer)
-		apiGroupAuth.POST("/endpoints/:endpointId/images", ctl.Render)
+		apiGroupAuth.GET("/resource/gpu/infos", ctl.ListAgentNodeResources)
+		apiGroupAuth.POST("/resource/gpu/apply", ctl.ApplyGpuResource)
+		apiGroupAuth.GET("/resource/gpu/status/:podId", ctl.GetPodStatus)
+		apiGroupAuth.PUT("/resource/gpu/:action/:podId", ctl.DoPodAction)
+		apiGroupAuth.PUT("/resource/gpu/edit", ctl.EditGpuPod)
 	}
 
 	return nil

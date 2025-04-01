@@ -10,7 +10,7 @@ type AgentNodeResource struct {
 	DriverVersion       string  `json:"driverVersion"`
 	RandomType          string  `json:"randomType"`
 	StorageType         string  `json:"storageType"`
-	CloudType           string  `json:"cloudType"`
+	CloudType           int     `json:"cloudType"`
 	MaxGPUCount         int     `json:"maxGpuCount" gorm:"default:0"`
 	MaxVCPU             int     `json:"maxVcpu" gorm:"column:max_vcpu;default:0"`
 	MaxVRAM             int     `json:"maxVram" gorm:"column:max_vram;default:0"`

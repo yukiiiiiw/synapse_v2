@@ -25,6 +25,12 @@ func (r *ServiceOperateLogRepository) FindByAgentID(agentID string) ([]*entity.S
 	return records, err
 }
 
+func (r *ServiceOperateLogRepository) FindBySaasPodID(saasPodId int64) (*entity.ServiceOperateLog, bool, error) {
+	record := new(entity.ServiceOperateLog)
+	err := r.DB.Where("saas_pod_id = ?", saasPodId).First(record).Error
+	return CheckFound(record, err)
+}
+
 func (r *ServiceOperateLogRepository) SaveOrUpdate(log *entity.ServiceOperateLog) error {
 	return r.DB.Save(log).Error
 }

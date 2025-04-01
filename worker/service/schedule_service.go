@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gorm.io/gorm"
+	"strconv"
 	"synapse/common/enum"
 	"synapse/worker/repository/repo"
 	entity "synapse/worker/repository/types"
@@ -33,7 +34,8 @@ func (svc *ScheduleService) ApplyAgentService(ctx context.Context, req *types.Ap
 func (svc *ScheduleService) UpdateAgentService(ctx context.Context, req *types.UpdateAgentServiceRequest) error {
 	// Query for existing operation logs
 	logRepo := repo.NewServiceOperateLogRepository(svc.db)
-	logs, err := logRepo.FindByServiceInfoID(req.SaasPodID)
+	// TODO ServiceInfoID or SassPodID
+	logs, err := logRepo.FindByServiceInfoID(strconv.FormatInt(req.SaasPodID, 10))
 	if err != nil {
 		return fmt.Errorf("failed to query operate logs: %w", err)
 	}
@@ -79,7 +81,7 @@ func (svc *ScheduleService) buildAgentServiceInfo(req interface{}, now int64) *e
 
 // buildServiceOperateLog builds a ServiceOperateLog entity
 func (svc *ScheduleService) buildServiceOperateLog(
-	saasPodId string,
+	saasPodId int64,
 	operateType enum.OperateType,
 	operateStatus enum.OperateStatus,
 	operateInfo map[string]interface{},

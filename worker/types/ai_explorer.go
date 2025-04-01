@@ -1,8 +1,121 @@
 package types
 
 import (
+	"synapse/common/enum"
 	"time"
 )
+
+type PageResponse[T any] struct {
+	Items    []T   `json:"records"`
+	PageSize int   `json:"pageSize"`
+	PageMark int64 `json:"pageMark"`
+	HasMore  bool  `json:"hasMore"`
+}
+
+type GpuResourceItem struct {
+	ID                    int64          `json:"id"`
+	CloudType             enum.CloudType `json:"cloudType" binding:"required"`
+	GpuType               string         `json:"gpuType"`
+	DriverVersion         string         `json:"driverVersion"`
+	GpuAvailableCardNum   int            `json:"gpuAvailableCardNum"`
+	SingleCardVram        int            `json:"singleCardVram"` //single card video ram in GB
+	SingleCardRam         int            `json:"singleCardRam"`  //single card ram in GB
+	SingleCardVcpu        int            `json:"singleCardVcpu"` //single card ram GPU
+	SingleCardPrice       float64        `json:"singleCardPrice"`
+	PersistentVolumeLimit int            `json:"singleStorageLimit"`
+	ContainerVolumeLimit  int            `json:"containerVolumeLimit"`
+	PersistentVolumePrice float64        `json:"persistentVolumePrice"`
+	ContainerVolumePrice  float64        `json:"containerVolumePrice"`
+	RamType               string         `json:"ramType"`
+	Region                string         `json:"region"`
+	Status                int            `json:"status"`
+}
+
+type ApplyGpuResourceRequest struct {
+	SassPodID             int64                  `json:"podId" binding:"required"`
+	Image                 string                 `json:"image" binding:"required"`
+	Region                string                 `json:"region" binding:"required"`
+	CloudType             enum.CloudType         `json:"cloudType" binding:"required"`
+	ResourceType          enum.ResourceType      `json:"resourceType" binding:"required"`
+	GpuType               string                 `json:"gpuType" binding:"required"`
+	GpuCount              int                    `json:"gpuCount" binding:"required"`
+	SingleCardVram        int                    `json:"singleCardVram" binding:"required"`
+	SingleCardRam         int                    `json:"singleCardRam" binding:"required"`
+	SingleCardVcpu        int                    `json:"singleCardVcpu" binding:"required"`
+	ContainerVolume       int                    `json:"containerVolume" binding:"required"`
+	PersistentVolume      int                    `json:"persistentVolume"`
+	PersistentVolumeId    int                    `json:"persistentVolumeId"`
+	PersistentMountPath   string                 `json:"persistentMountPath"`
+	SingleCardPrice       float64                `json:"singleCardPrice"`
+	PersistentVolumePrice float64                `json:"persistentVolumePrice"`
+	ContainerVolumePrice  float64                `json:"containerVolumePrice"`
+	InitCommand           string                 `json:"initializationCommand"`
+	EnvVars               []KeyValuePair[string] `json:"environmentVars" binding:"omitempty,dive"`
+	Expose                []PortMapping          `json:"expose" binding:"omitempty,dive"`
+	SshUser               string                 `json:"sshUser"`
+	SshPublicKey          string                 `json:"sshPublicKey"`
+}
+type EditGpuPodRequest struct {
+	SassPodID           int64                  `json:"podId" binding:"required"`                  // Pod ID, used to identify the Pod to be edited
+	Image               string                 `json:"image" binding:"required"`                  // Container image
+	ContainerVolume     int                    `json:"containerVolume" binding:"required"`        // Container volume size GB
+	PersistentVolume    int                    `json:"persistentVolume"`                          // Persistent volume size GB
+	PersistentVolumeId  int                    `json:"persistentVolumeId"`                        // Persistent volume ID
+	PersistentMountPath string                 `json:"persistentMountPath"`                       // Persistent volume mount path
+	InitCommand         string                 `json:"initializationCommand"`                     // Initialization command
+	EnvVars             []KeyValuePair[string] `json:"environmentVars"  binding:"omitempty,dive"` // Environment variables
+	Expose              []PortMapping          `json:"expose" binding:"omitempty,dive"`           // Port exposure configuration
+	SshUser             string                 `json:"sshUser"`                                   // SSH username
+	SshPublicKey        string                 `json:"sshPublicKey"`                              // SSH public key
+}
+type GpuStatusResponse struct {
+	Image                 string                 `json:"image"`
+	CloudType             enum.CloudType         `json:"cloudType" binding:"required"`
+	ResourceType          enum.ResourceType      `json:"resourceType" binding:"required"`
+	GpuType               string                 `json:"gpuType"`
+	GpuCount              int                    `json:"gpuCount"`
+	SingleCardVram        int                    `json:"singleCardVram"`
+	SingleCardRam         int                    `json:"singleCardRam"`
+	SingleCardVcpu        int                    `json:"singleCardVcpu"`
+	Location              string                 `json:"location"`
+	Region                string                 `json:"region"`
+	ContainerVolume       int                    `json:"containerVolume"`
+	PersistentVolume      int                    `json:"persistentVolume"`
+	PersistentVolumeId    int                    `json:"persistentVolumeId"`
+	PersistentMountPath   string                 `json:"persistentMountPath"`
+	NetworkUpload         int                    `json:"networkUpload"`
+	NetworkDownload       int                    `json:"networkDownload"`
+	DiskReadSpeed         int                    `json:"diskReadSpeed"`
+	DiskWriteSpeed        int                    `json:"diskWriteSpeed"`
+	SingleCardPrice       float64                `json:"singleCardPrice"`
+	PersistentVolumePrice float64                `json:"persistentVolumePrice"`
+	ContainerVolumePrice  float64                `json:"containerVolumePrice"`
+	InitCommand           string                 `json:"initializationCommand"`
+	EnvVars               []KeyValuePair[string] `json:"environmentVars"`
+	Expose                []ExposedPort          `json:"expose" `
+	SshUser               string                 `json:"sshUser"`
+	SshHost               string                 `json:"sshHost"`
+	SshPort               string                 `json:"sshPort"`
+	Status                int                    `json:"status"`
+}
+
+type ExposedPort struct {
+	PortMapping
+	Host      string `json:"host"`
+	ProxyPort int    `json:"proxyPort"`
+}
+
+type PortMapping struct {
+	Port     int    `json:"port" binding:"required,min=1"`
+	Protocol string `json:"protocol" binding:"required,oneof=tcp udp http"`
+}
+
+type KeyValuePair[T any] struct {
+	Key   string `json:"key" binding:"required"`
+	Value T      `json:"value" binding:"required"`
+}
+
+// -------------------------------------------------------------------------------------
 
 type CreateServerlessResourceRequest struct {
 	EndpointId string `json:"endpointId"    binding:"required"`

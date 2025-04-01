@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"log"
+	"strconv"
 	"strings"
 	"synapse/common"
 	"synapse/common/enum"
@@ -162,7 +163,7 @@ func (svc *AgentService) buildAgentNodeResource(agent *types.Agent, node *types.
 	}
 }
 
-func (svc *AgentService) ListAgentNodeResources(ctx context.Context, pageMark int64, limit int, sort string) (*types.AgentNodeResourceListResponse, error) {
+func (svc *AgentService) ListAgentNodeResources(ctx context.Context, pageMark int64, limit int, sort enum.SortType) (*types.AgentNodeResourceListResponse, error) {
 	resourceRepo := repo.NewAgentNodeResourceRepository(svc.db.WithContext(ctx))
 
 	resources, hasMore, err := resourceRepo.List(pageMark, limit, sort)
@@ -206,7 +207,7 @@ func (svc *AgentService) CalculateResourceMD5(agent *types.Agent, node *types.No
 		node.DiskReadSpeed,
 		node.RandomType,
 		node.StorageType,
-		agent.CloudType,
+		strconv.Itoa(agent.CloudType),
 	}
 
 	// Calculate MD5

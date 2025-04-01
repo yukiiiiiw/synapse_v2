@@ -21,7 +21,7 @@ func InitMultiSnowflakeInstances(ctx context.Context, redisCli redis.UniversalCl
 		}
 		nextNodeID -= 1 // 0 can be used
 		nextNodeID %= 1024
-		log.Log.Warnf("Snowflake node id initialized(key=%v): %v\n", k, nextNodeID)
+		log.Log.Infof("Snowflake node id initialized(key=%v): %v\n", k, nextNodeID)
 		flakeNode, err := snowflake.NewNode(int64(nextNodeID))
 		if err != nil {
 			return err

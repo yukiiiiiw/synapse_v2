@@ -13,7 +13,7 @@ func NewAgentServiceRepository(db *gorm.DB) *AgentServiceRepository {
 	return &AgentServiceRepository{BaseRepo[*entity.AgentServiceInfo]{DB: db}}
 }
 
-func (r *AgentServiceRepository) FindBySaasPodID(saasPodID string) (*entity.AgentServiceInfo, bool, error) {
+func (r *AgentServiceRepository) FindBySaasPodID(saasPodID int64) (*entity.AgentServiceInfo, bool, error) {
 	record := new(entity.AgentServiceInfo)
 	err := r.DB.Where("saas_pod_id = ?", saasPodID).First(record).Error
 	return CheckFound(record, err)

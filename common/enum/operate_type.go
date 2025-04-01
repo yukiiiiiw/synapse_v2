@@ -7,6 +7,6 @@ const (
 	OperateType_Update
 	OperateType_Delete
 	OperateType_Pause
-	OperateType_Resume
 	OperateType_Restart
+	OperateType_Resume
 )

@@ -2,7 +2,7 @@ package types
 
 type AgentServiceInfo struct {
 	ID               int64       `gorm:"primarykey" json:"id"`
-	SaasPodID        string      `json:"saasPodId" gorm:"not null"`          // saas podId as k8s service name
+	SaasPodID        int64       `json:"saasPodId" gorm:"not null"`          // saas podId as k8s service name
 	AgentID          string      `json:"agentId" gorm:"null"`                // k8s clusterId, strategy hit asynced
 	ServiceName      string      `json:"serviceName" gorm:"null"`            // k8s service name
 	ServiceInfo      interface{} `json:"serviceInfo" gorm:"type:jsonb;null"` // k8s service config (image,ip,port,gpu,cpu,disk...)

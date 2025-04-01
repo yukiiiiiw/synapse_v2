@@ -2,6 +2,7 @@ package repo
 
 import (
 	"gorm.io/gorm"
+	"synapse/common/enum"
 	entity "synapse/worker/repository/types"
 )
 
@@ -23,17 +24,19 @@ func (r *AgentNodeResourceRepository) SaveOrUpdate(resource *entity.AgentNodeRes
 	return r.DB.Save(resource).Error
 }
 
-func (r *AgentNodeResourceRepository) List(pageMark int64, limit int, sort string) ([]entity.AgentNodeResource, bool, error) {
+func (r *AgentNodeResourceRepository) List(pageMark int64, limit int, sort enum.SortType) ([]entity.AgentNodeResource, bool, error) {
 	var resources []entity.AgentNodeResource
 	query := r.DB.Model(&entity.AgentNodeResource{})
 
-	if pageMark > 0 {
-		query = query.Where("id > ?", pageMark)
-	}
-
-	if sort == "desc" {
+	if sort == enum.SortDesc {
+		if pageMark > 0 {
+			query = query.Where("id < ?", pageMark)
+		}
 		query = query.Order("id desc")
 	} else {
+		if pageMark > 0 {
+			query = query.Where("id > ?", pageMark)
+		}
 		query = query.Order("id asc")
 	}
 

@@ -5,7 +5,7 @@ type AgentInfo struct {
 	AgentID          string      `json:"agentId" gorm:"unique;not null"`
 	Status           int         `json:"status" gorm:"not null"`
 	AgentStatus      int         `json:"agentStatus" gorm:"not null"`
-	CloudType        string      `json:"cloudType" gorm:"not null"`
+	CloudType        int         `json:"cloudType" gorm:"not null"`
 	MetricInfo       interface{} `json:"metricInfo" gorm:"type:jsonb;not null"`
 	ResourceFreeInfo interface{} `json:"resourceFreeInfo" gorm:"type:jsonb;not null"`
 	BaseImage        string      `json:"baseImage"`

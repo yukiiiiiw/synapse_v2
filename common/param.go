@@ -20,6 +20,11 @@ var (
 	ErrEndpointNotFound = NewApiError(110002, "Endpoint not found")
 	ErrInferenceError   = NewApiError(110003, "Inference error")
 	ErrNoReadyClient    = NewApiError(110004, "No ready client")
+
+	ErrSaasPodIDExists   = NewApiError(110005, "Agent service with saasPodID already exists.")
+	ErrRequestLimit      = NewApiError(110006, "Request is too frequent.")
+	ErrSaasPodProcessing = NewApiError(110007, "Request is being processed, please try again later.")
+	ErrSaasPodIDNotExist = NewApiError(110008, "Pod with saasPodID does not exist.") // exists 改为 exist
 )
 
 func ConvertSaaSErrCode(code int, msg string) *ApiError {

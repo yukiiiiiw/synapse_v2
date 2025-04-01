@@ -5,7 +5,7 @@ type Agent struct {
 	Name            string `json:"name"`
 	Location        string `json:"location"`
 	Region          string `json:"region"`
-	CloudType       string `json:"cloud_type"`
+	CloudType       int    `json:"cloud_type"`
 	MetricTimestamp string `json:"metric_timestamp"`
 	Nodes           []Node `json:"nodes"`
 }
