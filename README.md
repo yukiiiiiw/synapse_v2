@@ -10,4 +10,7 @@ Since it depends on another private project "endorphin", you need to configure a
 go get github.com/yottalabsai/endorphin
 go mod tidy
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o k8s-maestro main.go
+
+# for test
+go test -v ./worker/test/service/...
 ```

@@ -6,7 +6,7 @@ import (
 	"github.com/jinzhu/copier"
 	"gorm.io/gorm"
 	"synapse/common"
-	"synapse/worker/repository"
+	"synapse/worker/repository/repo"
 	entity "synapse/worker/repository/types"
 	"synapse/worker/types"
 	"time"

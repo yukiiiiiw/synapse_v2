@@ -1,188 +1,185 @@
-CREATE SCHEMA IF NOT EXISTS synapse;
+-- Create schedule schema
+CREATE SCHEMA IF NOT EXISTS schedule;
+set serach_path to schedule;
 
-SET
-search_path TO synapse;
-
--- Kubernetes resources
-DROP TABLE IF EXISTS kubernetes_resources;
-CREATE TABLE kubernetes_resources
-(
-    id                       BIGSERIAL PRIMARY KEY,
-    external_id              VARCHAR(255) NOT NULL UNIQUE,
-    namespace                VARCHAR(255) NOT NULL,
-    deployment_name          VARCHAR(255),
-    deployment_replicas      INT,
-    service_name             VARCHAR(255),
-    ingress_jupyter_name     VARCHAR(255),
-    ingress_jupyter_protocol VARCHAR(10),
-    ingress_jupyter_cname    VARCHAR(255),
-    ingress_jupyter_url      VARCHAR(255),
-    ingress_ray_name         VARCHAR(255),
-    ingress_ray_protocol     VARCHAR(10),
-    ingress_ray_cname        VARCHAR(255),
-    ingress_ray_url          VARCHAR(255),
-    status                   INT,
-    created_at               TIMESTAMP(3) NOT NULL,
-    updated_at               TIMESTAMP(3),
-    UNIQUE (external_id)
+-- Resource PV and SKU per node
+CREATE TABLE schedule.agent_node_resource (
+    id BIGSERIAL PRIMARY KEY,
+    status INTEGER NOT NULL,
+    resource_type INTEGER NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    region VARCHAR(255) NOT NULL,
+    gpu_type VARCHAR(255),
+    driver_version VARCHAR(255),
+    random_type varchar(255) NULL,
+    storage_type varchar(255) NULL,
+    cloud_type varchar(255) NULL,
+    max_gpu_count INTEGER DEFAULT 0,
+    max_vcpu INTEGER DEFAULT 0,
+    max_vram INTEGER DEFAULT 0,
+    max_ram INTEGER DEFAULT 0,
+    max_persistent_volume INTEGER NOT NULL,
+    network_upload NUMERIC(38,18) DEFAULT 0.0,
+    network_download NUMERIC(38,18) DEFAULT 0.0,
+    disk_read_speed NUMERIC(38,18) DEFAULT 0.0,
+    disk_write_speed NUMERIC(38,18) DEFAULT 0.0,
+    random_type VARCHAR(255),
+    storage_type VARCHAR(255),
+    cloud_type VARCHAR(255),
+    resource_md5 TEXT NOT NULL UNIQUE,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    version INTEGER NOT NULL
 );
 
-COMMENT
-ON TABLE kubernetes_resources IS 'Kubernetes Resources';
-COMMENT
-ON COLUMN kubernetes_resources.external_id IS 'External Business Primary Key';
-COMMENT
-ON COLUMN kubernetes_resources.namespace IS 'Kubernetes Namespace';
-COMMENT
-ON COLUMN kubernetes_resources.deployment_name IS 'Deployment Name';
-COMMENT
-ON COLUMN kubernetes_resources.deployment_replicas IS 'Deployment Replica';
-COMMENT
-ON COLUMN kubernetes_resources.service_name IS 'Service Name';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_jupyter_name IS 'Ingress jupyter';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_jupyter_protocol IS 'Ingress jupyter protocol';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_jupyter_cname IS 'Ingress jupyter cname';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_jupyter_url IS 'Ingress jupyter url';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_ray_name IS 'Ingress ray';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_ray_protocol IS 'Ingress ray protocol';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_ray_cname IS 'Ingress ray cname';
-COMMENT
-ON COLUMN kubernetes_resources.ingress_ray_url IS 'Ingress ray url';
-COMMENT
-ON COLUMN kubernetes_resources.status IS 'Status: -1-stopped, 0-starting, 1-running';
-COMMENT
-ON COLUMN kubernetes_resources.created_at IS 'Create time';
-COMMENT
-ON COLUMN kubernetes_resources.updated_at IS 'Update time';
+COMMENT ON TABLE schedule.agent_node_resource IS 'Resource PV and SKU per node';
+COMMENT ON COLUMN schedule.agent_node_resource.status IS '0:unavailable 1:available';
+COMMENT ON COLUMN schedule.agent_node_resource.resource_type IS 'GPU, CPU';
+COMMENT ON COLUMN schedule.agent_node_resource.gpu_type IS 'G4090';
+COMMENT ON COLUMN schedule.agent_node_resource.max_gpu_count IS 'Node GPU count';
+COMMENT ON COLUMN schedule.agent_node_resource.max_vcpu IS 'Node video CPU';
+COMMENT ON COLUMN schedule.agent_node_resource.max_vram IS 'GB video RAM';
+COMMENT ON COLUMN schedule.agent_node_resource.max_ram IS 'GB RAM';
+COMMENT ON COLUMN schedule.agent_node_resource.max_persistent_volume IS 'GB node volume';
+COMMENT ON COLUMN schedule.agent_node_resource.resource_md5 IS 'md5(resource_type:gpu_type:max_gpu_count:...:disk_price)';
+COMMENT ON COLUMN schedule.agent_node_resource.version IS 'Optimistic Locking';
 
--- KeyPair
-DROP TABLE IF EXISTS key_pair_resources;
-CREATE TABLE key_pair_resources
-(
-    id          BIGSERIAL PRIMARY KEY,
-    external_id VARCHAR(255) NOT NULL UNIQUE,
-    private_key TEXT,
-    public_key  TEXT,
-    status      INT,
-    created_at  TIMESTAMP(3) NOT NULL,
-    updated_at  TIMESTAMP(3)
+-- All nodes
+CREATE TABLE schedule.agent_node_info (
+    id BIGSERIAL PRIMARY KEY,
+    agent_id VARCHAR(255) NOT NULL,
+    agent_node_id VARCHAR(255) NOT NULL,
+    node_status INTEGER NOT NULL,
+    status INTEGER NOT NULL,
+    resource_type INTEGER NOT NULL,
+    metric_info JSONB NOT NULL,
+    resource_free_info JSONB NOT NULL,
+    base_image VARCHAR(255),
+    location VARCHAR(255) NOT NULL,
+    region VARCHAR(255) NOT NULL,
+    gpu_type VARCHAR(255) NOT NULL,
+    total_gpu_count INTEGER DEFAULT 0,
+    total_vram INTEGER DEFAULT 0,
+    total_ram INTEGER DEFAULT 0,
+    total_vcpu INTEGER DEFAULT 0,
+    node_resource_id BIGINT NOT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    last_heart_beat BIGINT,
+    version INTEGER NOT NULL
 );
 
-COMMENT
-ON TABLE key_pair_resources IS 'KeyPair Resources';
-COMMENT
-ON COLUMN key_pair_resources.external_id IS 'External Business Primary Key';
-COMMENT
-ON COLUMN key_pair_resources.private_key IS 'Private Key';
-COMMENT
-ON COLUMN key_pair_resources.public_key IS 'Public Key';
-COMMENT
-ON COLUMN key_pair_resources.status IS 'Status: 0-inactive, 1-active';
-COMMENT
-ON COLUMN key_pair_resources.created_at IS 'Create time';
-COMMENT
-ON COLUMN key_pair_resources.updated_at IS 'Update time';
+COMMENT ON TABLE schedule.agent_node_info IS 'All nodes';
+COMMENT ON COLUMN schedule.agent_node_info.agent_id IS 'K8s cluster ID';
+COMMENT ON COLUMN schedule.agent_node_info.agent_node_id IS 'K8s cluster node ID';
+COMMENT ON COLUMN schedule.agent_node_info.node_status IS 'K8s cluster status';
+COMMENT ON COLUMN schedule.agent_node_info.status IS 'Available status -1:offline 0:available 1:busy';
+COMMENT ON COLUMN schedule.agent_node_info.resource_type IS 'GPU, CPU';
+COMMENT ON COLUMN schedule.agent_node_info.base_image IS 'Linux v0.0.0, Unix v0.0.0';
+COMMENT ON COLUMN schedule.agent_node_info.total_gpu_count IS 'Agent total GPU count';
+COMMENT ON COLUMN schedule.agent_node_info.total_vram IS 'GB';
+COMMENT ON COLUMN schedule.agent_node_info.total_ram IS 'GB';
+COMMENT ON COLUMN schedule.agent_node_info.total_vcpu IS 'GB';
+COMMENT ON COLUMN schedule.agent_node_info.version IS 'Optimistic Locking';
 
--- Instance
-DROP TABLE IF EXISTS instance_resources;
-CREATE TABLE instance_resources
-(
-    id                BIGSERIAL PRIMARY KEY,
-    external_id       VARCHAR(255) NOT NULL UNIQUE,
-    instance_type     VARCHAR(50)  NOT NULL,
-    image_id          VARCHAR(100) NOT NULL,
-    device_name       VARCHAR(50)  NOT NULL,
-    volume_size       INT          NOT NULL,
-    key_pair_id       VARCHAR(50)  NOT NULL,
-    security_group_id VARCHAR(50)  NOT NULL,
-    private_key       TEXT,
-    public_key        TEXT,
-    instance_id       VARCHAR(255) NOT NULL UNIQUE,
-    association_id    VARCHAR(255),
-    allocation_id     VARCHAR(255),
-    ip_address        VARCHAR(255),
-    domain_name       VARCHAR(255),
-    status            INT,
-    created_at        TIMESTAMP(3) NOT NULL,
-    updated_at        TIMESTAMP(3)
+-- Agent
+CREATE TABLE schedule.agent_info (
+    id BIGSERIAL PRIMARY KEY,
+    agent_id VARCHAR(255) NOT NULL,
+    agent_status INTEGER NOT NULL,
+    status INTEGER NOT NULL,
+    cloud_type VARCHAR(255) NOT NULL,
+    metric_info JSONB NOT NULL,
+    resource_free_info JSONB NOT NULL,
+    base_image VARCHAR(255),
+    location VARCHAR(255) NOT NULL,
+    region VARCHAR(255) NOT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    last_heart_beat BIGINT,
+    version INTEGER NOT NULL
 );
 
-COMMENT
-ON TABLE instance_resources IS 'Instance Resources';
-COMMENT
-ON COLUMN instance_resources.external_id IS 'External Business Primary Key';
-COMMENT
-ON COLUMN instance_resources.instance_type IS 'Instance Type';
-COMMENT
-ON COLUMN instance_resources.image_id IS 'Image ID(AMI)';
-COMMENT
-ON COLUMN instance_resources.device_name IS 'Device Name';
-COMMENT
-ON COLUMN instance_resources.volume_size IS 'Volume Size';
-COMMENT
-ON COLUMN instance_resources.key_pair_id IS 'Key Pair Id';
-COMMENT
-ON COLUMN instance_resources.security_group_id IS 'Security Group Id';
-COMMENT
-ON COLUMN instance_resources.private_key IS 'Private Key';
-COMMENT
-ON COLUMN instance_resources.public_key IS 'Public Key';
-COMMENT
-ON COLUMN instance_resources.instance_id IS 'Instance Id';
-COMMENT
-ON COLUMN instance_resources.allocation_id IS 'Allocation Id';
-COMMENT
-ON COLUMN instance_resources.ip_address IS 'IP Address';
-COMMENT
-ON COLUMN instance_resources.domain_name IS 'Domain Name';
-COMMENT
-ON COLUMN instance_resources.status IS 'Status: -1:failed,0:starting,1:running,2:stopped,3:terminated';
-COMMENT
-ON COLUMN instance_resources.created_at IS 'Create time';
-COMMENT
-ON COLUMN instance_resources.updated_at IS 'Update time';
+COMMENT ON TABLE schedule.agent_info IS 'Agent';
+COMMENT ON COLUMN schedule.agent_info.agent_id IS 'K8s cluster ID';
+COMMENT ON COLUMN schedule.agent_info.agent_status IS 'K8s cluster status';
+COMMENT ON COLUMN schedule.agent_info.status IS 'Available status -1:offline 0:available 1:busy';
+COMMENT ON COLUMN schedule.agent_info.cloud_type IS 'Secure or community';
+COMMENT ON COLUMN schedule.agent_info.base_image IS 'Linux v0.0.0, Unix v0.0.0';
+COMMENT ON COLUMN schedule.agent_info.version IS 'Optimistic Locking';
 
--- Model type
-DROP TABLE IF EXISTS instance_model_type;
-CREATE TABLE instance_model_type
-(
-    id               BIGSERIAL PRIMARY KEY,
-    type             INT          NOT NULL,
-    instance_type    varchar(50)  NOT NULL,
-    cpu_count        INT          NOT NULL,
-    memory           INT          NOT NULL,
-    gpu_sku          varchar(50)  NOT NULL,
-    gpu_count        INT          NOT NULL,
-    gpu_memory       INT          NOT NULL,
-    storage_type     INT          NOT NULL,
-    storage_capacity BIGINT       NOT NULL,
-    display_name     VARCHAR(255) NOT NULL
+CREATE INDEX idx_metric_info ON schedule.agent_info USING gin (metric_info);
+CREATE INDEX idx_resource_free_info ON schedule.agent_info USING gin (resource_free_info);
+CREATE UNIQUE INDEX udx_agent_id ON schedule.agent_info USING btree (agent_id);
+
+-- Service
+CREATE TABLE schedule.agent_service_info (
+    id bigint NOT NULL primary key,
+    saas_pod_id varchar(255) NOT NULL, -- saas podId as k8s service name
+    
+    agent_id varchar(255) NULL, -- k8s clusterId, strategy hit asynced
+    service_name varchar(255) NULL, -- k8s service name
+    service_info jsonb NULL, -- k8s service config (image,ip,port,gpu,cpu,disk...)
+    metric_info jsonb NULL, -- pod realtime metric info (nodePort ingress pv http/tcp)
+    
+    status integer NOT NULL, -- -1:failure 0:deploying 10:updating 11:deleting 12:pausing 20:running 21:deleted 22:paused 
+    created_at bigint NOT NULL,
+    updated_at bigint NULL,
+    service_updated_at bigint NULL,
+    last_heart_beat bigint NULL,
+    version int NOT NULL -- Optimistic Locking
 );
 
-COMMENT
-ON COLUMN instance_model_type.type IS 'instance machine type: 1-CPU, 2-GPU';
-COMMENT
-ON COLUMN instance_model_type.instance_type IS 'instance aws type: g4dn.12xlarge';
-COMMENT
-ON COLUMN instance_model_type.cpu_count IS 'CPU count';
-COMMENT
-ON COLUMN instance_model_type.memory IS 'Memory';
-COMMENT
-ON COLUMN instance_model_type.gpu_sku IS 'GPU SKU';
-COMMENT
-ON COLUMN instance_model_type.gpu_count IS 'GPU count';
-COMMENT
-ON COLUMN instance_model_type.gpu_memory IS 'GPU Memory';
-COMMENT
-ON COLUMN instance_model_type.storage_type IS 'Storage Type';
-COMMENT
-ON COLUMN instance_model_type.storage_capacity IS 'Storage Capacity';
-COMMENT
-ON COLUMN instance_model_type.display_name IS 'Display Name';
+CREATE UNIQUE INDEX udx_saas_pod_agent ON schedule.agent_service_info USING btree (saas_pod_id, agent_id);
+CREATE INDEX idx_agent_id ON schedule.agent_service_info USING btree (agent_id);
+
+-- Schedule service log
+CREATE TABLE IF NOT EXISTS schedule.service_operate_log (
+    id bigint NOT NULL primary key,
+    service_info_id bigint NOT NULL,
+    saas_pod_id varchar(255) NOT NULL,
+    schedule_info jsonb NOT NULL,  -- saas required resources
+    
+    operate_type integer NOT NULL, -- operator type 0:deploy 1:update 2:delete 3:pause 4:resume 5:restart
+    status integer NOT NULL, -- operator status 0:init 1:completed
+    created_at bigint NOT NULL,
+    updated_at bigint NULL,
+    completed_at bigint NULL,
+    version int NOT NULL -- Optimistic Locking
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_operate_log_service_info_id ON schedule.service_operate_log(service_info_id);
+CREATE INDEX IF NOT EXISTS idx_service_operate_log_saas_pod_id ON schedule.service_operate_log(saas_pod_id);
+
+
+-- Strategy
+CREATE TABLE schedule.route_rule (
+    id BIGSERIAL PRIMARY KEY,
+    rule_code VARCHAR(100) UNIQUE,
+    description VARCHAR(255),
+    enabled BOOLEAN DEFAULT true,
+    priority INTEGER DEFAULT 0,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    version INTEGER NOT NULL
+);
+
+COMMENT ON TABLE schedule.route_rule IS 'Strategy';
+COMMENT ON COLUMN schedule.route_rule.rule_code IS 'config_match, resource_score';
+COMMENT ON COLUMN schedule.route_rule.version IS 'Optimistic Locking';
+
+CREATE TABLE schedule.route_chain (
+    id BIGSERIAL PRIMARY KEY,
+    chain_name VARCHAR(100) UNIQUE,
+    resource_type INTEGER NOT NULL,
+    rules JSONB,
+    enabled BOOLEAN DEFAULT true,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT,
+    version INTEGER NOT NULL
+);
+
+COMMENT ON TABLE schedule.route_chain IS 'Strategy';
+COMMENT ON COLUMN schedule.route_chain.resource_type IS 'GPU, CPU';
+COMMENT ON COLUMN schedule.route_chain.rules IS '["config_match", "health_score"]';
+COMMENT ON COLUMN schedule.route_chain.version IS 'Optimistic Locking';

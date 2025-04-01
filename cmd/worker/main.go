@@ -24,7 +24,7 @@ func main() {
 		}
 	}()
 
-	_, err := commonConfig.ReadConfig(common.ServiceConnector, &config.Config)
+	_, err := commonConfig.ReadConfig(common.ServiceWorker, &config.Config)
 	if err != nil {
 		log.Log.Fatal("read config failed", zap.Error(err))
 	}
