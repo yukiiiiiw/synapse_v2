@@ -52,7 +52,7 @@ func (r *ScheduleRepository) UpdateScheduleStatus(ctx context.Context, info *ent
 		if err != nil {
 			return err
 		}
-		if updated {
+		if !updated {
 			return fmt.Errorf("UpdateAgentServiceInfoStatus error")
 		}
 		operateLog.ServiceInfoID = info.ID

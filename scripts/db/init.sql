@@ -1,3 +1,4 @@
+-- DROP SCHEMA IF EXISTS schedule CASCADE;
 -- Create schedule schema
 CREATE SCHEMA IF NOT EXISTS schedule;
 SET search_path TO schedule;
@@ -145,7 +146,7 @@ CREATE TABLE schedule.service_operate_log (
      id BIGSERIAL PRIMARY KEY,
      service_info_id BIGINT NOT NULL,
      saas_pod_id BIGINT NOT NULL,
-     schedule_info JSONB NOT NULL,
+     schedule_info JSONB NULL,
      operate_type INTEGER NOT NULL,
      status INTEGER NOT NULL,
      created_at BIGINT NOT NULL,

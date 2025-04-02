@@ -33,8 +33,9 @@ func (r *AgentServiceRepository) UpdateAgentServiceInfoStatus(info *entity.Agent
 	result := r.DB.Model(&entity.AgentServiceInfo{}).
 		Where("id = ? AND version = ?", info.ID, info.Version).
 		Updates(map[string]interface{}{
-			"status":  info.Status,
-			"version": info.Version + 1,
+			"status":     info.Status,
+			"updated_at": info.UpdatedAt,
+			"version":    info.Version + 1,
 		})
 	if result.Error != nil {
 		return false, result.Error

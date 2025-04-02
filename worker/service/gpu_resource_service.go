@@ -7,10 +7,10 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"synapse/common"
-	"synapse/common/config"
 	"synapse/common/enum"
 	"synapse/common/log"
 	"synapse/common/utils"
+	"synapse/worker/config"
 	"synapse/worker/constants"
 	"synapse/worker/repository/repo"
 	entity "synapse/worker/repository/types"
@@ -298,7 +298,7 @@ func (svc *GpuResourceService) createGpuResourceRedisLock(saasPodId int64) *util
 
 func (svc *GpuResourceService) checkProcessingRequest(ctx context.Context, sassPodId int64) error {
 	operateLogRepo := repo.NewServiceOperateLogRepository(svc.db.WithContext(ctx))
-	existedOperateLog, exists, err := operateLogRepo.FindBySaasPodID(sassPodId)
+	exists, err := operateLogRepo.ExistsProcessingLog(sassPodId)
 	if err != nil {
 		log.Log.Error("failed to query service operate log",
 			zap.Int64("SassPodID", sassPodId),
@@ -306,7 +306,7 @@ func (svc *GpuResourceService) checkProcessingRequest(ctx context.Context, sassP
 		return fmt.Errorf("查询操作日志失败: %w", err)
 	}
 
-	if exists && existedOperateLog.Status == int(enum.Operate_Status_Init) {
+	if exists {
 		log.Log.Info("request is being processed",
 			zap.Int64("SassPodID", sassPodId))
 		return common.ErrSaasPodProcessing

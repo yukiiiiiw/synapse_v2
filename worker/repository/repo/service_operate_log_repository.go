@@ -2,6 +2,7 @@ package repo
 
 import (
 	"gorm.io/gorm"
+	"synapse/common/enum"
 	entity "synapse/worker/repository/types"
 )
 
@@ -25,10 +26,13 @@ func (r *ServiceOperateLogRepository) FindByAgentID(agentID string) ([]*entity.S
 	return records, err
 }
 
-func (r *ServiceOperateLogRepository) FindBySaasPodID(saasPodId int64) (*entity.ServiceOperateLog, bool, error) {
-	record := new(entity.ServiceOperateLog)
-	err := r.DB.Where("saas_pod_id = ?", saasPodId).First(record).Error
-	return CheckFound(record, err)
+func (r *ServiceOperateLogRepository) ExistsProcessingLog(saasPodId int64) (bool, error) {
+	var count int64
+	err := r.DB.Model(&entity.ServiceOperateLog{}).Where("saas_pod_id = ? and status = ?", saasPodId, int(enum.Operate_Status_Init)).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *ServiceOperateLogRepository) SaveOrUpdate(log *entity.ServiceOperateLog) error {
