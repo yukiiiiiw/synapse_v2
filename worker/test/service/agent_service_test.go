@@ -28,7 +28,7 @@ func TestAgentService_Register(t *testing.T) {
 				Name:            "Test Agent 1",
 				Location:        "test-location",
 				Region:          "test-region",
-				CloudType:       "test-cloud",
+				CloudType:       0,
 				MetricTimestamp: fmt.Sprintf("%d", time.Now().UTC().UnixMilli()),
 				Nodes: []types.Node{
 					{
@@ -139,7 +139,7 @@ func TestAgentService_CalculateResourceMD5(t *testing.T) {
 		ID:        "test-agent",
 		Location:  "test-location",
 		Region:    "test-region",
-		CloudType: "test-cloud",
+		CloudType: 0,
 	}
 
 	node := &types.Node{
@@ -224,7 +224,7 @@ func TestAgentService_ListAgentNodeResources(t *testing.T) {
 				Name:            "Test Agent " + agent.agentID,
 				Location:        agent.location,
 				Region:          agent.region,
-				CloudType:       "test-cloud",
+				CloudType:       0,
 				MetricTimestamp: fmt.Sprintf("%d", time.Now().UTC().UnixMilli()),
 				Nodes: []types.Node{
 					{
@@ -318,7 +318,7 @@ func TestAgentService_ListAgentNodeResources(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := svc.ListAgentNodeResources(context.Background(), tt.pageMark, tt.limit, tt.sort)
+			resp, err := svc.ListAgentNodeResources(context.Background(), tt.pageMark, tt.limit, enum.SortType(tt.sort))
 			assert.NoError(t, err)
 			assert.NotNil(t, resp)
 			assert.Equal(t, tt.wantCount, len(resp.Items))
