@@ -55,3 +55,43 @@ services:
 agent_node:
   busyThreshold: "0.9"
   heartbeatTimeout: "10m"
+
+rabbitmq:
+  amqp:
+    uri: amqp://rabbitmq:rabbitmq@127.0.0.1:5672/testhost
+    pool:
+      maxConnections: 5
+      maxChannelsPerConn: 10
+      waitTimeoutSeconds: 30s
+      reconnectIntervalSeconds: 3s
+  producer:
+    name: "producer0"
+    retries: 0
+    retryIntervalSeconds: 2s
+    exchanges:
+      - name: "orders"
+        type: "topic"
+        durable: true
+
+      - name: "payments"
+        type: "direct"
+        durable: true
+        
+  consumers:
+    - name: "order_consumer"
+      queue: "order_queue"
+      exchange: "orders"
+      routingKey: "order.*"
+      exchangeType: "topic"
+      durable: true
+      autoAck: false
+      prefetchCount: 20
+
+    - name: "payment_consumer"
+      queue: "payment_queue"
+      exchange: "payments"
+      routingKey: "payment.processed"
+      exchangeType: "direct"
+      durable: true
+      autoAck: true
+      prefetchCount: 30

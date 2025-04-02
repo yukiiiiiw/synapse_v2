@@ -11,6 +11,7 @@ import (
 	idgenerator "synapse/common/id-generator"
 	"synapse/common/log"
 	"synapse/worker/config"
+	"synapse/worker/mq"
 )
 
 func Start(ctx context.Context) error {
@@ -45,6 +46,18 @@ func Start(ctx context.Context) error {
 			log.Log.Warn("http server stopped", zap.Error(err))
 		}
 	}()
+
+	// Initialize the producer
+	mq.InitProducer(&config.Config.RabbitMQConfig.Producer)
+
+	// Initialize the consumers
+	consumers := config.Config.RabbitMQConfig.Consumers
+	for _, consumer := range consumers {
+		mq.StartConsumer(ctx, &consumer, func(body []byte) error {
+			log.Log.Infof("Received order: %s", body)
+			return nil
+		})
+	}
 
 	return nil
 }

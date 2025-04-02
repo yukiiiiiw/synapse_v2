@@ -34,6 +34,7 @@ func InitRouter(ctx context.Context, engine *gin.Engine) error {
 		apiGroupAuth.GET("/resource/gpu/status/:podId", ctl.GetPodStatus)
 		apiGroupAuth.PUT("/resource/gpu/:action/:podId", ctl.DoPodAction)
 		apiGroupAuth.PUT("/resource/gpu/edit", ctl.EditGpuPod)
+		apiGroupAuth.POST("/produce", ctl.TestProducer)
 	}
 
 	return nil

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"net/http"
 	"strconv"
 	"synapse/common"
 	"synapse/common/log"
 	"synapse/worker/constants"
+	"synapse/worker/mq"
 	"synapse/worker/service"
 	"synapse/worker/types"
 )
@@ -39,6 +41,17 @@ func (ctl *GpuController) ListAgentNodeResources(ctx *gin.Context) {
 	}
 
 	common.JSON(ctx, common.HttpOk, common.Ok(res))
+}
+
+func (ctl *GpuController) TestProducer(ctx *gin.Context) {
+
+	body, err := ctx.GetRawData()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "failed to read request body"})
+		return
+	}
+	//log.Log.Infow("test producer", zap.Any("body", string(body)))
+	mq.Producer.Publish(ctx, "orders", "order.*", body)
 }
 
 func (ctl *GpuController) ApplyGpuResource(ctx *gin.Context) {
