@@ -8,14 +8,28 @@ const (
 	Terminate string = "terminate"
 )
 
-// PodActions defines the mapping of pod actions to their corresponding operate types.
-var PodActions = map[string]enum.OperateType{
-	Restart:   enum.OperateType_Restart,
-	Pause:     enum.OperateType_Pause,
-	Terminate: enum.OperateType_Delete,
+type OperateTypeDeploymentStatus struct {
+	OperateType      enum.OperateType
+	DeploymentStatus enum.DeploymentStatus
 }
 
-func ValidPodAction(podAction string) (enum.OperateType, bool) {
-	operateType, exists := PodActions[podAction]
-	return operateType, exists
+// PodActions defines the mapping of pod actions to their corresponding operate types.
+var PodActionMapping = map[string]*OperateTypeDeploymentStatus{
+	Restart: {
+		OperateType:      enum.OperateType_Restart,
+		DeploymentStatus: enum.Deployment_Status_Restarting,
+	},
+	Pause: {
+		OperateType:      enum.OperateType_Pause,
+		DeploymentStatus: enum.Deployment_Status_Pausing,
+	},
+	Terminate: {
+		OperateType:      enum.OperateType_Delete,
+		DeploymentStatus: enum.Deployment_Status_Deleting,
+	},
+}
+
+func CheckAndGetOperateTypeDeploymentStatus(podAction string) (*OperateTypeDeploymentStatus, bool) {
+	operateTypeDeploymentStatus, exists := PodActionMapping[podAction]
+	return operateTypeDeploymentStatus, exists
 }

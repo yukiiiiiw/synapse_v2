@@ -13,22 +13,22 @@ type PageResponse[T any] struct {
 }
 
 type GpuResourceItem struct {
-	ID                    int64          `json:"id"`
-	CloudType             enum.CloudType `json:"cloudType" binding:"required"`
-	GpuType               string         `json:"gpuType"`
-	DriverVersion         string         `json:"driverVersion"`
-	GpuAvailableCardNum   int            `json:"gpuAvailableCardNum"`
-	SingleCardVram        int            `json:"singleCardVram"` //single card video ram in GB
-	SingleCardRam         int            `json:"singleCardRam"`  //single card ram in GB
-	SingleCardVcpu        int            `json:"singleCardVcpu"` //single card ram GPU
-	SingleCardPrice       float64        `json:"singleCardPrice"`
-	PersistentVolumeLimit int            `json:"singleStorageLimit"`
-	ContainerVolumeLimit  int            `json:"containerVolumeLimit"`
-	PersistentVolumePrice float64        `json:"persistentVolumePrice"`
-	ContainerVolumePrice  float64        `json:"containerVolumePrice"`
-	RamType               string         `json:"ramType"`
-	Region                string         `json:"region"`
-	Status                int            `json:"status"`
+	ID                     int64          `json:"id"`
+	CloudType              enum.CloudType `json:"cloudType" binding:"required"`
+	GpuType                string         `json:"gpuType"`
+	DriverVersion          string         `json:"driverVersion"`
+	GpuCardMaxAvailableNum int            `json:"gpuCardMaxAvailableNum"`
+	SingleCardVram         int            `json:"singleCardVram"` //single card video ram in GB
+	SingleCardRam          int            `json:"singleCardRam"`  //single card ram in GB
+	SingleCardVcpu         int            `json:"singleCardVcpu"` //single card ram GPU
+	SingleCardPrice        float64        `json:"singleCardPrice"`
+	PersistentVolumeLimit  int            `json:"singleStorageLimit"`
+	ContainerVolumeLimit   int            `json:"containerVolumeLimit"`
+	PersistentVolumePrice  float64        `json:"persistentVolumePrice"`
+	ContainerVolumePrice   float64        `json:"containerVolumePrice"`
+	RamType                string         `json:"ramType"`
+	Region                 string         `json:"region"`
+	Status                 int            `json:"status"`
 }
 
 type ApplyGpuResourceRequest struct {

@@ -137,13 +137,13 @@ func (ctl *GpuController) DoPodAction(ctx *gin.Context) {
 		return
 	}
 
-	operateType, isValidAction := constants.ValidPodAction(action)
+	operateTypeDeploymentStatus, isValidAction := constants.CheckAndGetOperateTypeDeploymentStatus(action)
 	if !isValidAction {
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
 	}
 
-	if err := ctl.svc.DoPodAction(ctx, SassPodID, operateType); err != nil {
+	if err := ctl.svc.DoPodAction(ctx, SassPodID, operateTypeDeploymentStatus); err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
 			log.Log.Errorf("do gpu pod action error: %v", err)
 		})

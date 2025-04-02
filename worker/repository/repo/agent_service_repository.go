@@ -28,3 +28,19 @@ func (r *AgentServiceRepository) FindByAgentID(agentID string) ([]*entity.AgentS
 func (r *AgentServiceRepository) SaveOrUpdate(service *entity.AgentServiceInfo) error {
 	return r.DB.Save(service).Error
 }
+
+func (r *AgentServiceRepository) UpdateAgentServiceInfoStatus(info *entity.AgentServiceInfo) (bool, error) {
+	result := r.DB.Model(&entity.AgentServiceInfo{}).
+		Where("id = ? AND version = ?", info.ID, info.Version).
+		Updates(map[string]interface{}{
+			"status":  info.Status,
+			"version": info.Version + 1,
+		})
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return false, ErrOptimisticLockConflict
+	}
+	return true, nil
+}

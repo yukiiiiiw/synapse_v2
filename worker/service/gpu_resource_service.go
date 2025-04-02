@@ -27,9 +27,9 @@ func NewGpuResourceService(db *gorm.DB) *GpuResourceService {
 }
 
 func (svc *GpuResourceService) ListAgentNodeResources(ctx context.Context, pageMark int64, pageSize int) (*types.PageResponse[types.GpuResourceItem], error) {
-	repo := repo.NewAgentNodeResourceRepository(svc.db.WithContext(ctx))
+	agentResourceRepo := repo.NewAgentNodeResourceRepository(svc.db.WithContext(ctx))
 
-	resources, hasMore, err := repo.List(pageMark, pageSize, enum.SortAsc)
+	resources, hasMore, err := agentResourceRepo.List(pageMark, pageSize, enum.SortAsc)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +84,12 @@ func (svc *GpuResourceService) ApplyGpuResource(ctx context.Context, req *types.
 
 	// Save using repository
 	scheduleRepo := repo.NewScheduleRepository(svc.db.WithContext(ctx))
-	//TODO send request to agent
 	return scheduleRepo.SaveSchedule(ctx, serviceInfo, operateLog)
 }
 
-func (svc *GpuResourceService) GetPodStatus(ctx context.Context, SassPodID int64) (*types.GpuStatusResponse, error) {
+func (svc *GpuResourceService) GetPodStatus(ctx context.Context, sassPodID int64) (*types.GpuStatusResponse, error) {
 	agentServiceRepo := repo.NewAgentServiceRepository(svc.db.WithContext(ctx))
-	existedServiceInfo, exists, err := agentServiceRepo.FindBySaasPodID(SassPodID)
+	existedServiceInfo, exists, err := agentServiceRepo.FindBySaasPodID(sassPodID)
 	if err != nil {
 		return nil, fmt.Errorf("apply gpu resource failed to query agent service: %w", err)
 	} else if !exists {
@@ -153,52 +152,39 @@ func (svc *GpuResourceService) EditGpuPod(ctx context.Context, req *types.EditGp
 	if err := svc.checkProcessingRequest(ctx, req.SassPodID); err != nil {
 		return err
 	}
-	serviceInfoID, err := svc.findServiceInfoID(ctx, req.SassPodID)
+
+	serviceInfo, operateLog, err := svc.buildEditInfo(ctx, req)
 	if err != nil {
 		return err
 	}
-	now := time.Now().UTC().UnixMilli()
-	// TODO check if the pod is running
-	// TODO check if the pod is in error status
-	// TODO confirm only save operate log
-	_, operateLog := svc.buildEditInfo(req, serviceInfoID, now)
 
-	// Update using repository
-	operateLogRepo := repo.NewServiceOperateLogRepository(svc.db.WithContext(ctx))
-	//TODO send request to agent
-	return operateLogRepo.Save(operateLog)
+	scheduleRepo := repo.NewScheduleRepository(svc.db.WithContext(ctx))
+	return scheduleRepo.UpdateScheduleStatus(ctx, serviceInfo, operateLog)
 
 }
 
-func (svc *GpuResourceService) DoPodAction(ctx context.Context, SassPodID int64, operateType enum.OperateType) error {
-	lock := svc.createGpuResourceRedisLock(SassPodID)
+func (svc *GpuResourceService) DoPodAction(ctx context.Context, sassPodID int64, operateTypeDeploymentStatus *constants.OperateTypeDeploymentStatus) error {
+	lock := svc.createGpuResourceRedisLock(sassPodID)
 	if locked, err := lock.TryLock(ctx); err != nil {
-		log.Log.Error("gpu pod action try lock error.", zap.Int64("SassPodID", SassPodID), zap.Int("operateType", int(operateType)), zap.Error(err))
+		log.Log.Error("gpu pod action try lock error.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)), zap.Error(err))
 		return err
 	} else if !locked {
-		log.Log.Error("gpu pod action try lock failed.", zap.Int64("SassPodID", SassPodID), zap.Int("operateType", int(operateType)))
+		log.Log.Error("gpu pod action try lock failed.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)))
 		return common.ErrRequestLimit
 	}
 	defer lock.Unlock(ctx)
 
-	if err := svc.checkProcessingRequest(ctx, SassPodID); err != nil {
+	if err := svc.checkProcessingRequest(ctx, sassPodID); err != nil {
 		return err
 	}
-	serviceInfoID, err := svc.findServiceInfoID(ctx, SassPodID)
+
+	serviceInfo, operateLog, err := svc.buildGpuActionInfo(ctx, sassPodID, operateTypeDeploymentStatus)
 	if err != nil {
 		return err
 	}
-	now := time.Now().UTC().UnixMilli()
-	// TODO check if the pod is running
-	// TODO check if the pod is in error status
-	// TODO confirm only save operate log
-	// TODO confirm id generation
-	_, operateLog := svc.buildGpuActionInfo(operateType, SassPodID, serviceInfoID, now)
 
-	// Update using repository
-	operateLogRepo := repo.NewServiceOperateLogRepository(svc.db.WithContext(ctx))
-	//TODO send request to agent
-	return operateLogRepo.Save(operateLog)
+	scheduleRepo := repo.NewScheduleRepository(svc.db.WithContext(ctx))
+	return scheduleRepo.UpdateScheduleStatus(ctx, serviceInfo, operateLog)
 }
 
 func (svc *GpuResourceService) buildApplyInfo(req *types.ApplyGpuResourceRequest, now int64) (*entity.AgentServiceInfo, *entity.ServiceOperateLog) {
@@ -247,15 +233,14 @@ func (svc *GpuResourceService) buildApplyInfo(req *types.ApplyGpuResourceRequest
 	return serviceInfo, operateLog
 }
 
-func (svc *GpuResourceService) buildEditInfo(req *types.EditGpuPodRequest, serviceInfoID int64, now int64) (*entity.AgentServiceInfo, *entity.ServiceOperateLog) {
-	// TODO
-	serviceInfo := &entity.AgentServiceInfo{
-		UpdatedAt: now,
-		Version:   1,
-		SaasPodID: req.SassPodID,
-		Status:    int(enum.Deployment_Status_Deploying),
-		CreatedAt: now,
+func (svc *GpuResourceService) buildEditInfo(ctx context.Context, req *types.EditGpuPodRequest) (*entity.AgentServiceInfo, *entity.ServiceOperateLog, error) {
+	serviceInfo, err := svc.checkAndFindServiceInfo(ctx, req.SassPodID)
+	if err != nil {
+		return nil, nil, err
 	}
+	now := time.Now().UTC().UnixMilli()
+	serviceInfo.Status = int(enum.Deployment_Status_Updating)
+	serviceInfo.UpdatedAt = now
 
 	// Only one field is missing from EditGpuPodRequest: SassPodID
 	operateInfo := map[string]interface{}{
@@ -279,31 +264,30 @@ func (svc *GpuResourceService) buildEditInfo(req *types.EditGpuPodRequest, servi
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		Version:       1,
-		ServiceInfoID: serviceInfoID,
+		ServiceInfoID: serviceInfo.ID,
 	}
-	return serviceInfo, operateLog
+	return serviceInfo, operateLog, nil
 }
 
-func (svc *GpuResourceService) buildGpuActionInfo(operateType enum.OperateType, sassPodID, serviceInfoID int64, now int64) (*entity.AgentServiceInfo, *entity.ServiceOperateLog) {
-	// TODO
-	serviceInfo := &entity.AgentServiceInfo{
-		UpdatedAt: now,
-		Version:   1,
-		SaasPodID: sassPodID,
-		Status:    int(enum.Deployment_Status_Deploying),
-		CreatedAt: now,
+func (svc *GpuResourceService) buildGpuActionInfo(ctx context.Context, saasPodID int64, operateTypeDeploymentStatus *constants.OperateTypeDeploymentStatus) (*entity.AgentServiceInfo, *entity.ServiceOperateLog, error) {
+	serviceInfo, err := svc.checkAndFindServiceInfo(ctx, saasPodID)
+	if err != nil {
+		return nil, nil, err
 	}
+	now := time.Now().UTC().UnixMilli()
+	serviceInfo.Status = int(operateTypeDeploymentStatus.DeploymentStatus)
+	serviceInfo.UpdatedAt = now
 
 	operateLog := &entity.ServiceOperateLog{
-		SaasPodID:     sassPodID,
-		OperateType:   int(operateType),
+		SaasPodID:     serviceInfo.SaasPodID,
+		OperateType:   int(operateTypeDeploymentStatus.OperateType),
 		Status:        int(enum.Operate_Status_Init),
 		CreatedAt:     now,
 		UpdatedAt:     now,
 		Version:       1,
-		ServiceInfoID: serviceInfoID,
+		ServiceInfoID: serviceInfo.ID,
 	}
-	return serviceInfo, operateLog
+	return serviceInfo, operateLog, nil
 }
 
 func (svc *GpuResourceService) createGpuResourceRedisLock(saasPodId int64) *utils.Lock {
@@ -331,19 +315,19 @@ func (svc *GpuResourceService) checkProcessingRequest(ctx context.Context, sassP
 }
 
 func (svc *GpuResourceService) checkExistsAgentService(ctx context.Context, sassPodId int64) error {
-	_, err := svc.findServiceInfoID(ctx, sassPodId)
+	_, err := svc.checkAndFindServiceInfo(ctx, sassPodId)
 	return err
 }
 
-func (svc *GpuResourceService) findServiceInfoID(ctx context.Context, sassPodId int64) (int64, error) {
+func (svc *GpuResourceService) checkAndFindServiceInfo(ctx context.Context, sassPodId int64) (*entity.AgentServiceInfo, error) {
 	agentServiceRepo := repo.NewAgentServiceRepository(svc.db.WithContext(ctx))
 	existedServiceInfo, exists, err := agentServiceRepo.FindBySaasPodID(sassPodId)
 	if err != nil {
 		log.Log.Error("failed to query agent service", zap.Int64("SassPodID", sassPodId), zap.Error(err))
-		return 0, fmt.Errorf("query agent service: %w", err)
+		return nil, fmt.Errorf("query agent service: %w", err)
 	} else if !exists {
 		log.Log.Error("agent service info with SaasPodId not exist", zap.Int64("SassPodID", sassPodId))
-		return 0, common.ErrSaasPodIDNotExist
+		return nil, common.ErrSaasPodIDNotExist
 	}
-	return existedServiceInfo.ID, nil
+	return existedServiceInfo, nil
 }

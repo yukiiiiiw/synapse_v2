@@ -43,6 +43,30 @@ func (r *ScheduleRepository) SaveSchedule(ctx context.Context, info *entity.Agen
 	})
 }
 
+func (r *ScheduleRepository) UpdateScheduleStatus(ctx context.Context, info *entity.AgentServiceInfo, operateLog *entity.ServiceOperateLog) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		infoRepo := NewAgentServiceRepository(tx)
+		logRepo := NewServiceOperateLogRepository(tx)
+
+		updated, err := infoRepo.UpdateAgentServiceInfoStatus(info)
+		if err != nil {
+			return err
+		}
+		if updated {
+			return fmt.Errorf("UpdateAgentServiceInfoStatus error")
+		}
+		operateLog.ServiceInfoID = info.ID
+		if err := logRepo.Save(operateLog); err != nil {
+			log.Log.Errorw("Failed to save service operate log",
+				"error", err,
+				"service_id", operateLog.ServiceInfoID)
+			return fmt.Errorf("failed to save service operate log: %w", err)
+		}
+
+		return nil
+	})
+}
+
 func (r *ScheduleRepository) UpdateSchedule(ctx context.Context, info *entity.AgentServiceInfo, operateLogs []*entity.ServiceOperateLog) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// Create repositories with transaction
