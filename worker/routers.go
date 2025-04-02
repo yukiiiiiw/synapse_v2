@@ -14,7 +14,7 @@ func InitRouter(ctx context.Context, engine *gin.Engine) error {
 	// Init other services
 
 	var (
-		apiGroupAuth = engine.Group("/api/v2", middleware.RequestHeader(), middleware.Authentication())
+		apiGroupAuth = engine.Group("/api/v2/worker", middleware.RequestHeader(), middleware.Authentication())
 	)
 
 	{

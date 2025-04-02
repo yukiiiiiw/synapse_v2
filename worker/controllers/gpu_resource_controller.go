@@ -24,7 +24,7 @@ func (ctl *GpuController) ListAgentNodeResources(ctx *gin.Context) {
 	pageMark, pageSize, err := queryPageInfo(ctx)
 
 	if err != nil {
-		log.Log.Error("get query page info error", zap.Error(err))
+		log.Log.Errorw("get query page info error", zap.Error(err))
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
 	}
@@ -32,7 +32,7 @@ func (ctl *GpuController) ListAgentNodeResources(ctx *gin.Context) {
 	res, err := ctl.svc.ListAgentNodeResources(ctx, pageMark, pageSize)
 	if err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("get gpu resources error", zap.Error(err))
+			log.Log.Errorw("get gpu resources error", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -44,13 +44,14 @@ func (ctl *GpuController) ListAgentNodeResources(ctx *gin.Context) {
 func (ctl *GpuController) ApplyGpuResource(ctx *gin.Context) {
 	req := types.ApplyGpuResourceRequest{}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Log.Error("apply gpu resource bind json failed", zap.Error(err))
+		log.Log.Errorw("apply gpu resource bind json failed", zap.Error(err))
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
 	}
+	log.Log.Infow("apply gpu resource", zap.Any("request", req))
 	if err := common.Validate(&req); err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("apply gpu resource validate failed", zap.Error(err))
+			log.Log.Errorw("apply gpu resource validate failed", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -60,7 +61,7 @@ func (ctl *GpuController) ApplyGpuResource(ctx *gin.Context) {
 
 	if err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("apply gpu resource error", zap.Error(err))
+			log.Log.Errorw("apply gpu resource error", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -84,7 +85,7 @@ func (ctl *GpuController) GetPodStatus(ctx *gin.Context) {
 	res, err := ctl.svc.GetPodStatus(ctx, SassPodID)
 	if err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("get gpu pod status error", zap.Error(err))
+			log.Log.Errorw("get gpu pod status error", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -96,13 +97,14 @@ func (ctl *GpuController) GetPodStatus(ctx *gin.Context) {
 func (ctl *GpuController) EditGpuPod(ctx *gin.Context) {
 	req := types.EditGpuPodRequest{}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		log.Log.Error("edit gpu pod bind json failed", zap.Error(err))
+		log.Log.Errorw("edit gpu pod bind json failed", zap.Error(err))
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
 	}
+	log.Log.Infow("edit gpu pod", zap.Any("request", req))
 	if err := common.Validate(&req); err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("edit gpu pod validate failed", zap.Error(err))
+			log.Log.Errorw("edit gpu pod validate failed", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -110,7 +112,7 @@ func (ctl *GpuController) EditGpuPod(ctx *gin.Context) {
 
 	if err := ctl.svc.EditGpuPod(ctx, &req); err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Error("edit gpu pod error", zap.Error(err))
+			log.Log.Errorw("edit gpu pod error", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return
@@ -120,14 +122,14 @@ func (ctl *GpuController) EditGpuPod(ctx *gin.Context) {
 }
 
 func (ctl *GpuController) DoPodAction(ctx *gin.Context) {
-	SassPodIDStr := ctx.Param("podId")
+	sassPodIDStr := ctx.Param("podId")
 	action := ctx.Param("action")
-	log.Log.Info("do gpu pod action", zap.String("action", action), zap.String("SassPodID", SassPodIDStr))
-	if SassPodIDStr == "" {
+	log.Log.Infow("do gpu pod action.", zap.String("action", action), zap.String("sassPodId", sassPodIDStr))
+	if sassPodIDStr == "" {
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
 	}
-	SassPodID, err := strconv.ParseInt(SassPodIDStr, 10, 64)
+	SassPodID, err := strconv.ParseInt(sassPodIDStr, 10, 64)
 	if err != nil {
 		common.JSON(ctx, common.HttpOk, common.ErrBadArgument)
 		return
@@ -145,7 +147,7 @@ func (ctl *GpuController) DoPodAction(ctx *gin.Context) {
 
 	if err := ctl.svc.DoPodAction(ctx, SassPodID, operateTypeDeploymentStatus); err != nil {
 		httpCode, body := common.GuessError(err, func(error) {
-			log.Log.Errorf("do gpu pod action error: %v", err)
+			log.Log.Errorw("do gpu pod action error", zap.Error(err))
 		})
 		common.JSON(ctx, httpCode, body)
 		return

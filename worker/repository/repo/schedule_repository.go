@@ -59,7 +59,7 @@ func (r *ScheduleRepository) UpdateScheduleStatus(ctx context.Context, info *ent
 		if err := logRepo.Save(operateLog); err != nil {
 			log.Log.Errorw("Failed to save service operate log",
 				"error", err,
-				"service_id", operateLog.ServiceInfoID)
+				"service_id", info.ID)
 			return fmt.Errorf("failed to save service operate log: %w", err)
 		}
 

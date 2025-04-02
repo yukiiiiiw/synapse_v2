@@ -56,14 +56,13 @@ func (svc *GpuResourceService) ListAgentNodeResources(ctx context.Context, pageM
 }
 
 func (svc *GpuResourceService) ApplyGpuResource(ctx context.Context, req *types.ApplyGpuResourceRequest) error {
-	log.Log.Infof("apply gpu resource: %v", req)
 
 	lock := svc.createGpuResourceRedisLock(req.SassPodID)
 	if locked, err := lock.TryLock(ctx); err != nil {
-		log.Log.Error("apply gpu resource try lock error.", zap.Int64("SassPodID", req.SassPodID), zap.Error(err))
+		log.Log.Errorw("apply gpu resource try lock error.", zap.Int64("sassPodID", req.SassPodID), zap.Error(err))
 		return err
 	} else if !locked {
-		log.Log.Error("apply gpu resource try lock failed.", zap.Int64("SassPodID", req.SassPodID))
+		log.Log.Errorw("apply gpu resource try lock failed.", zap.Int64("sassPodID", req.SassPodID))
 		return common.ErrRequestLimit
 	}
 	defer lock.Unlock(ctx)
@@ -138,13 +137,12 @@ func (svc *GpuResourceService) GetPodStatus(ctx context.Context, sassPodID int64
 }
 
 func (svc *GpuResourceService) EditGpuPod(ctx context.Context, req *types.EditGpuPodRequest) error {
-	log.Log.Infof("edit gpu pod: %v", req)
 	lock := svc.createGpuResourceRedisLock(req.SassPodID)
 	if locked, err := lock.TryLock(ctx); err != nil {
-		log.Log.Error("edit gpu pod try lock error.", zap.Int64("SassPodID", req.SassPodID), zap.Error(err))
+		log.Log.Errorw("edit gpu pod try lock error.", zap.Int64("sassPodID", req.SassPodID), zap.Error(err))
 		return err
 	} else if !locked {
-		log.Log.Error("edit gpu pod try lock failed.", zap.Int64("SassPodID", req.SassPodID))
+		log.Log.Errorw("edit gpu pod try lock failed.", zap.Int64("sassPodID", req.SassPodID))
 		return common.ErrRequestLimit
 	}
 	defer lock.Unlock(ctx)
@@ -166,10 +164,10 @@ func (svc *GpuResourceService) EditGpuPod(ctx context.Context, req *types.EditGp
 func (svc *GpuResourceService) DoPodAction(ctx context.Context, sassPodID int64, operateTypeDeploymentStatus *constants.OperateTypeDeploymentStatus) error {
 	lock := svc.createGpuResourceRedisLock(sassPodID)
 	if locked, err := lock.TryLock(ctx); err != nil {
-		log.Log.Error("gpu pod action try lock error.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)), zap.Error(err))
+		log.Log.Errorw("gpu pod action try lock error.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)), zap.Error(err))
 		return err
 	} else if !locked {
-		log.Log.Error("gpu pod action try lock failed.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)))
+		log.Log.Errorw("gpu pod action try lock failed.", zap.Int64("sassPodID", sassPodID), zap.Int("operateType", int(operateTypeDeploymentStatus.OperateType)))
 		return common.ErrRequestLimit
 	}
 	defer lock.Unlock(ctx)
@@ -300,15 +298,14 @@ func (svc *GpuResourceService) checkProcessingRequest(ctx context.Context, sassP
 	operateLogRepo := repo.NewServiceOperateLogRepository(svc.db.WithContext(ctx))
 	exists, err := operateLogRepo.ExistsProcessingLog(sassPodId)
 	if err != nil {
-		log.Log.Error("failed to query service operate log",
-			zap.Int64("SassPodID", sassPodId),
+		log.Log.Errorw("failed to query service operate log",
+			zap.Int64("sassPodID", sassPodId),
 			zap.Error(err))
-		return fmt.Errorf("查询操作日志失败: %w", err)
+		return fmt.Errorf("failed to query service operate log: %w", err)
 	}
 
 	if exists {
-		log.Log.Info("request is being processed",
-			zap.Int64("SassPodID", sassPodId))
+		log.Log.Info("request is being processed", zap.Int64("sassPodID", sassPodId))
 		return common.ErrSaasPodProcessing
 	}
 	return nil
@@ -323,10 +320,10 @@ func (svc *GpuResourceService) checkAndFindServiceInfo(ctx context.Context, sass
 	agentServiceRepo := repo.NewAgentServiceRepository(svc.db.WithContext(ctx))
 	existedServiceInfo, exists, err := agentServiceRepo.FindBySaasPodID(sassPodId)
 	if err != nil {
-		log.Log.Error("failed to query agent service", zap.Int64("SassPodID", sassPodId), zap.Error(err))
+		log.Log.Errorw("failed to query agent service", zap.Int64("sassPodID", sassPodId), zap.Error(err))
 		return nil, fmt.Errorf("query agent service: %w", err)
 	} else if !exists {
-		log.Log.Error("agent service info with SaasPodId not exist", zap.Int64("SassPodID", sassPodId))
+		log.Log.Errorw("agent service info with SaasPodId not exist", zap.Int64("sassPodID", sassPodId))
 		return nil, common.ErrSaasPodIDNotExist
 	}
 	return existedServiceInfo, nil
