@@ -1,5 +1,13 @@
 package types
 
+type AgentRegisterRequest struct {
+	Agent Agent `json:"agent"`
+}
+
+type AgentReportRequest struct {
+	Agent Agent `json:"agent"`
+}
+
 type Agent struct {
 	ID              string `json:"id"`
 	Name            string `json:"name"`
@@ -8,10 +16,6 @@ type Agent struct {
 	CloudType       int    `json:"cloud_type"`
 	MetricTimestamp string `json:"metric_timestamp"`
 	Nodes           []Node `json:"nodes"`
-}
-
-type AgentRegisterRequest struct {
-	Agent Agent `json:"agent"`
 }
 
 type Node struct {

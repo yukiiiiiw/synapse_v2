@@ -1,4 +1,4 @@
--- Create schema and set search path
+-- Create schedule schema
 CREATE SCHEMA IF NOT EXISTS schedule;
 SET search_path TO schedule;
 

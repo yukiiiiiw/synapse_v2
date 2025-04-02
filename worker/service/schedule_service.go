@@ -9,6 +9,7 @@ import (
 	"synapse/worker/repository/repo"
 	entity "synapse/worker/repository/types"
 	"synapse/worker/types"
+	"synapse/worker/util"
 	"time"
 )
 
@@ -59,11 +60,12 @@ func (svc *ScheduleService) UpdateAgentService(ctx context.Context, req *types.U
 // buildAgentServiceInfo builds an AgentServiceInfo entity
 func (svc *ScheduleService) buildAgentServiceInfo(req interface{}, now int64) *entity.AgentServiceInfo {
 	serviceInfo := &entity.AgentServiceInfo{
+		ID:               util.GetNextId(),
 		ServiceName:      req.(interface{ GetServiceName() string }).GetServiceName(),
 		ServiceInfo:      req.(interface{ GetServiceInfo() map[string]interface{} }).GetServiceInfo(),
 		UpdatedAt:        now,
 		ServiceUpdatedAt: now,
-		Version:          1,
+		Version:          0,
 	}
 
 	switch r := req.(type) {
@@ -88,12 +90,13 @@ func (svc *ScheduleService) buildServiceOperateLog(
 	now int64,
 ) *entity.ServiceOperateLog {
 	return &entity.ServiceOperateLog{
+		ID:           util.GetNextId(),
 		SaasPodID:    saasPodId,
 		OperateType:  int(operateType),
 		Status:       int(operateStatus),
 		ScheduleInfo: operateInfo,
 		CreatedAt:    now,
 		UpdatedAt:    now,
-		Version:      1,
+		Version:      0,
 	}
 }

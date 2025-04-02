@@ -53,3 +53,10 @@ func (r *AgentNodeResourceRepository) List(pageMark int64, limit int, sort enum.
 
 	return resources, hasMore, nil
 }
+
+// FindByResourceMD5s finds all resources by resource MD5s
+func (r *AgentNodeResourceRepository) FindByResourceMD5s(resourceMD5s []string) ([]*entity.AgentNodeResource, error) {
+	var resources []*entity.AgentNodeResource
+	err := r.DB.Where("resource_md5 IN ?", resourceMD5s).Find(&resources).Error
+	return resources, err
+}

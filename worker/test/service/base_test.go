@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"synapse/common"
 	commoncfg "synapse/common/config"
+	idgenerator "synapse/common/id-generator"
 	"synapse/common/log"
 	"synapse/worker/config"
 	"testing"
@@ -43,6 +44,20 @@ func SetupTestEnv(t *testing.T) {
 
 	// Set the database connection in worker config
 	config.DB = commoncfg.DB
+
+	// Initialize Redis client
+	config.Redis = commoncfg.InitRedis(&config.Config.Redis)
+
+	t.Logf("Redis client initialized successfully")
+
+	// Initialize Snowflake
+	if err := idgenerator.InitMultiSnowflakeInstances(
+		context.Background(),
+		config.Redis,
+		config.SnowflakeNodeIDRedisKeyForNextId,
+	); err != nil {
+		t.Fatalf("Failed to initialize snowflake: %v", err)
+	}
 }
 
 // getProjectRoot returns the project root directory

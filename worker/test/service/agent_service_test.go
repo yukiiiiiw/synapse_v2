@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"synapse/common/enum"
 	"synapse/worker/config"
@@ -28,7 +29,7 @@ func TestAgentService_Register(t *testing.T) {
 				Location:        "test-location",
 				Region:          "test-region",
 				CloudType:       "test-cloud",
-				MetricTimestamp: time.Now().UTC().Format(time.RFC3339),
+				MetricTimestamp: fmt.Sprintf("%d", time.Now().UTC().UnixMilli()),
 				Nodes: []types.Node{
 					{
 						ID:                        "test-node-1",
@@ -124,7 +125,8 @@ func TestAgentService_CalculateAgentStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := svc.CalculateAgentStatus(tt.node)
+			busyThreshold := 0.9
+			result := svc.CalculateNodeStatus(tt.node, busyThreshold)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -223,7 +225,7 @@ func TestAgentService_ListAgentNodeResources(t *testing.T) {
 				Location:        agent.location,
 				Region:          agent.region,
 				CloudType:       "test-cloud",
-				MetricTimestamp: time.Now().UTC().Format(time.RFC3339),
+				MetricTimestamp: fmt.Sprintf("%d", time.Now().UTC().UnixMilli()),
 				Nodes: []types.Node{
 					{
 						ID:                        "test-node-" + agent.agentID,
