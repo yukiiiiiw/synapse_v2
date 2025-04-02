@@ -4,7 +4,7 @@ set serach_path to schedule;
 
 -- Resource PV and SKU per node
 CREATE TABLE schedule.agent_node_resource (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     status INTEGER NOT NULL,
     resource_type INTEGER NOT NULL,
     location VARCHAR(255) NOT NULL,
@@ -84,7 +84,7 @@ COMMENT ON COLUMN schedule.agent_node_info.version IS 'Optimistic Locking';
 
 -- Agent
 CREATE TABLE schedule.agent_info (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     agent_id VARCHAR(255) NOT NULL,
     agent_status INTEGER NOT NULL,
     status INTEGER NOT NULL,
@@ -114,7 +114,7 @@ CREATE UNIQUE INDEX udx_agent_id ON schedule.agent_info USING btree (agent_id);
 
 -- Service
 CREATE TABLE schedule.agent_service_info (
-    id bigint NOT NULL primary key,
+    id BIGINT NOT NULL PRIMARY KEY,
     saas_pod_id varchar(255) NOT NULL, -- saas podId as k8s service name
     
     agent_id varchar(255) NULL, -- k8s clusterId, strategy hit asynced
@@ -135,8 +135,8 @@ CREATE INDEX idx_agent_id ON schedule.agent_service_info USING btree (agent_id);
 
 -- Schedule service log
 CREATE TABLE IF NOT EXISTS schedule.service_operate_log (
-    id bigint NOT NULL primary key,
-    service_info_id bigint NOT NULL,
+    id BIGINT NOT NULL PRIMARY KEY,
+    service_info_id BIGINT NOT NULL,
     saas_pod_id varchar(255) NOT NULL,
     schedule_info jsonb NOT NULL,  -- saas required resources
     

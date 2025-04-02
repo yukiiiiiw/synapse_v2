@@ -14,11 +14,11 @@ datasource:
     log_level: info
   postgres:
     host: 127.0.0.1
-    port: 25432
+    port: 5432
     username: postgres
     password: 123456
     database: yotta
-    search_path: synapse
+    search_path: schedule
     time_zone: UTC
     ssl_mode: disable
 
@@ -26,8 +26,8 @@ redis:
   mode: standalone # cluster
   network: tcp
   host: 127.0.0.1
-  port: 26379
-  password:
+  port: 6379
+  password: 123456
   db: 0
   tls_enabled: false
 
@@ -44,10 +44,14 @@ logger:
 
 grpc_server:
   host: 0.0.0.0
-  port: 50051
+  port: 50052
 
 services:
   - name: yotta-saas
     endpoint: "https://api.dev.yottalabs.ai"
     headers:
       "apiKey": "N.A."
+
+agent_node:
+  busyThreshold: "0.9"
+  heartbeatTimeout: "10m"

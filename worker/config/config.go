@@ -15,20 +15,19 @@ var (
 )
 
 type config struct {
-	App             App                        `json:"app" yaml:"app" mapstructure:"app"`
-	Logger          commoncfg.LoggerConfig     `json:"logger" yaml:"logger" mapstructure:"logger"`
-	Server          commoncfg.ServerConfig     `json:"server" yaml:"server" mapstructure:"server"`
-	Datasource      commoncfg.DatasourceConfig `json:"datasource" yaml:"datasource" mapstructure:"datasource"`
-	Redis           commoncfg.RedisConfig      `json:"redis" yaml:"redis" mapstructure:"redis"`
-	Sentry          commoncfg.SentryConfig     `json:"sentry" yaml:"sentry" mapstructure:"sentry"`
-	AgentNodeConfig AgentNodeConfig            `json:"agentNode" yaml:"agentNode" mapstructure:"agentNode"`
+	App        App                        `json:"app" yaml:"app" mapstructure:"app"`
+	Logger     commoncfg.LoggerConfig     `json:"logger" yaml:"logger" mapstructure:"logger"`
+	Server     commoncfg.ServerConfig     `json:"server" yaml:"server" mapstructure:"server"`
+	Datasource commoncfg.DatasourceConfig `json:"datasource" yaml:"datasource" mapstructure:"datasource"`
+	Redis      commoncfg.RedisConfig      `json:"redis" yaml:"redis" mapstructure:"redis"`
+	Sentry     commoncfg.SentryConfig     `json:"sentry" yaml:"sentry" mapstructure:"sentry"`
+	AgentNode  AgentNodeConfig            `json:"agent_node" yaml:"agent_node" mapstructure:"agent_node"`
 }
 
 type App struct {
 	AsyncApiWaitTimeout time.Duration   `json:"async_api_wait_timeout" yaml:"async_api_wait_timeout" mapstructure:"async_api_wait_timeout"`
 	AuthToken           string          `json:"auth_token" yaml:"auth_token" mapstructure:"auth_token"`
 	Services            []ServiceConfig `json:"services" yaml:"services" mapstructure:"services"`
-	AgentNode           AgentNodeConfig `json:"agent_node" yaml:"agent_node" mapstructure:"agent_node"`
 }
 
 type ServiceConfig struct {
@@ -37,5 +36,6 @@ type ServiceConfig struct {
 }
 
 type AgentNodeConfig struct {
-	BusyThreshold float64 `yaml:"busyThreshold" json:"busyThreshold"`
+	BusyThreshold    float64       `yaml:"busyThreshold" json:"busyThreshold"`
+	HeartbeatTimeout time.Duration `yaml:"heartbeatTimeout" json:"heartbeatTimeout"`
 }
