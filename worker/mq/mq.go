@@ -22,6 +22,9 @@ func initPool(ctx context.Context) *pool.ConnectionPool {
 	// Initialize the connection pool
 	once.Do(func() {
 		amqpConfig := config.Config.RabbitMQConfig.Amqp
+		if amqpConfig.Uri == "" {
+			return
+		}
 		log.Log.Infow("init mq pool", zap.Any("config", amqpConfig))
 
 		var err error
@@ -51,7 +54,7 @@ func initPool(ctx context.Context) *pool.ConnectionPool {
 }
 
 func InitProducer(ctx context.Context, config *config.ProducerConfig) {
-	if config == nil {
+	if config.Name == "" {
 		return
 	}
 	log.Log.Infow("init producer", zap.Any("config", config))
@@ -70,6 +73,9 @@ func InitProducer(ctx context.Context, config *config.ProducerConfig) {
 }
 
 func StartConsumer(ctx context.Context, config *config.ConsumerConfig, handler func(body []byte) error) {
+	if config.Name == "" {
+		return
+	}
 	connPool := initPool(ctx)
 	log.Log.Infow("start consumer", zap.Any("config", config))
 
@@ -101,10 +107,4 @@ func convertStruct[T any](src any, dest *T) error {
 		return err
 	}
 	return json.Unmarshal(data, dest)
-}
-
-func ClosePool() {
-	if connectionPool != nil {
-		connectionPool.Close()
-	}
 }
