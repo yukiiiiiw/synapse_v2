@@ -10,13 +10,13 @@ import (
 )
 
 type ConsumerConfig struct {
-	Queue         string
-	Exchange      string
-	RoutingKey    string
-	ExchangeType  string
-	Durable       bool
-	AutoAck       bool
-	PrefetchCount int
+	Queue         string `json:"queue"`
+	Exchange      string `json:"exchange"`
+	RoutingKey    string `json:"routingKey"`
+	ExchangeType  string `json:"exchangeType"`
+	Durable       bool   `json:"durable"`
+	AutoAck       bool   `json:"autoAck"`
+	PrefetchCount int    `json:"prefetchCount"`
 }
 
 type Consumer struct {

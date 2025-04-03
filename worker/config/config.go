@@ -53,30 +53,30 @@ type AmqpMQ struct {
 }
 
 type PoolConfig struct {
-	MaxConnections           int           `yaml:"maxConnections"`
-	MaxChannelsPerConn       int           `yaml:"maxChannelsPerConn"`
-	WaitTimeoutSeconds       time.Duration `yaml:"waitTimeoutSeconds"`
-	ReconnectIntervalSeconds time.Duration `yaml:"reconnectIntervalSeconds"`
+	MaxConnections     int           `json:"maxConnections" yaml:"maxConnections"`
+	MaxChannelsPerConn int           `json:"maxChannelsPerConn" yaml:"maxChannelsPerConn"`
+	WaitTimeout        time.Duration `json:"waitTimeout" yaml:"waitTimeout"`
+	ReconnectInterval  time.Duration `json:"reconnectInterval" yaml:"reconnectInterval"`
 }
 
 type ProducerConfig struct {
-	Name                 string           `yaml:"name"`
-	Retries              int              `yaml:"retries"`
-	RetryIntervalSeconds time.Duration    `yaml:"retryIntervalSeconds"`
-	ExchangeConfig       []ExchangeConfig `yaml:"exchanges" mapstructure:"exchanges"`
+	Name           string           `json:"name" yaml:"name"`
+	Retries        int              `json:"retries" yaml:"retries"`
+	RetryInterval  time.Duration    `json:"retryInterval" yaml:"retryInterval"`
+	ExchangeConfig []ExchangeConfig `json:"exchanges" yaml:"exchanges" mapstructure:"exchanges"`
 }
 type ExchangeConfig struct {
-	Name    string `yaml:"name" json:"name"`
-	Type    string `yaml:"type" json:"type"`
-	Durable bool   `yaml:"durable" json:"durable"`
+	Name    string `json:"name" yaml:"name"`
+	Type    string `json:"type" yaml:"type"`
+	Durable bool   `json:"durable" yaml:"durable"`
 }
 type ConsumerConfig struct {
-	Name          string `yaml:"name"`
-	Queue         string `yaml:"queue"`
-	Exchange      string `yaml:"exchange"`
-	RoutingKey    string `yaml:"routingKey"`
-	ExchangeType  string `yaml:"exchangeType"`
-	Durable       bool   `yaml:"durable"`
-	AutoAck       bool   `yaml:"autoAck"`
-	PrefetchCount int    `yaml:"prefetchCount"`
+	Name          string `json:"name" yaml:"name"`
+	Queue         string `json:"queue" yaml:"queue"`
+	Exchange      string `json:"exchange" yaml:"exchange"`
+	RoutingKey    string `json:"routingKey" yaml:"routingKey"`
+	ExchangeType  string `json:"exchangeType" yaml:"exchangeType"`
+	Durable       bool   `json:"durable" yaml:"durable"`
+	AutoAck       bool   `json:"autoAck" yaml:"autoAck"`
+	PrefetchCount int    `json:"prefetchCount" yaml:"prefetchCount"`
 }

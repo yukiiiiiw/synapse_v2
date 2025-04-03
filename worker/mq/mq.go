@@ -2,8 +2,8 @@ package mq
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
 	"synapse/common/log"
 	"synapse/common/rabbitmq/core"
@@ -18,74 +18,67 @@ var (
 	Producer       *core.Producer
 )
 
-func InitPool() *pool.ConnectionPool {
+func initPool(ctx context.Context) *pool.ConnectionPool {
 	// Initialize the connection pool
 	once.Do(func() {
 		amqpConfig := config.Config.RabbitMQConfig.Amqp
 		log.Log.Infow("init mq pool", zap.Any("config", amqpConfig))
-		poolConfig := amqpConfig.Pool
 
 		var err error
+		var poolConfig pool.PoolConfig
+		err = convertStruct(amqpConfig.Pool, &poolConfig)
+		if err != nil {
+			panic(err)
+		}
+
 		connectionPool, err = pool.NewConnectionPool(
 			amqpConfig.Uri,
-			&pool.PoolConfig{
-				MaxConnections:     poolConfig.MaxConnections,
-				MaxChannelsPerConn: poolConfig.MaxChannelsPerConn,
-				WaitTimeout:        poolConfig.WaitTimeoutSeconds,
-				ReconnectInterval:  poolConfig.ReconnectIntervalSeconds,
-			},
+			&poolConfig,
 		)
 		if err != nil {
 			panic(errors.New("failed to create RabbitMQ connection pool"))
 		}
+		go func() {
+			select {
+			case <-ctx.Done():
+				log.Log.Infow("closing mq pool", zap.Any("config", amqpConfig))
+				connectionPool.Close()
+			}
+		}()
 	})
 
 	return connectionPool
 }
 
-func InitProducer(config *config.ProducerConfig) {
+func InitProducer(ctx context.Context, config *config.ProducerConfig) {
 	if config == nil {
 		return
 	}
-
 	log.Log.Infow("init producer", zap.Any("config", config))
-	connPool := InitPool()
+	connPool := initPool(ctx)
 
-	exchangeCfgs := make([]core.ExchangeConfig, len(config.ExchangeConfig))
-
-	if len(exchangeCfgs) > 0 {
-		for i, resource := range config.ExchangeConfig {
-			err := copier.Copy(&exchangeCfgs[i], &resource)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	producerCfg := &core.ProducerConfig{
-		Exchanges:     exchangeCfgs,
-		Retries:       config.Retries,
-		RetryInterval: config.RetryIntervalSeconds,
+	var producerConfig core.ProducerConfig
+	err := convertStruct(config, &producerConfig)
+	if err != nil {
+		panic(err)
 	}
 
-	var err error
-	Producer, err = core.NewProducer(connPool, producerCfg)
+	Producer, err = core.NewProducer(connPool, &producerConfig)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func StartConsumer(ctx context.Context, config *config.ConsumerConfig, handler func(body []byte) error) {
-	connPool := InitPool()
+	connPool := initPool(ctx)
 	log.Log.Infow("start consumer", zap.Any("config", config))
-	consumerConfig := core.ConsumerConfig{
-		Queue:         config.Queue,
-		Exchange:      config.Exchange,
-		RoutingKey:    config.RoutingKey,
-		ExchangeType:  config.ExchangeType,
-		Durable:       config.Durable,
-		AutoAck:       config.AutoAck,
-		PrefetchCount: config.PrefetchCount,
+
+	var consumerConfig core.ConsumerConfig
+	err := convertStruct(config, &consumerConfig)
+	if err != nil {
+		panic(err)
 	}
+
 	consumer, err := core.NewConsumer(connPool, &consumerConfig)
 	if err != nil {
 		panic(err)
@@ -94,7 +87,20 @@ func StartConsumer(ctx context.Context, config *config.ConsumerConfig, handler f
 		if handlerErr := consumer.Consume(ctx, handler); handlerErr != nil {
 			log.Log.Error("Error starting consumer handler", zap.String("consumer", config.Name), zap.Error(err))
 		}
+		select {
+		case <-ctx.Done():
+			log.Log.Infow("consumer stopped", zap.String("consumer", config.Name))
+			consumer.Close()
+		}
 	}()
+}
+
+func convertStruct[T any](src any, dest *T) error {
+	data, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, dest)
 }
 
 func ClosePool() {

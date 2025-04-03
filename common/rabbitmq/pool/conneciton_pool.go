@@ -11,10 +11,10 @@ import (
 )
 
 type PoolConfig struct {
-	MaxConnections     int
-	MaxChannelsPerConn int
-	WaitTimeout        time.Duration
-	ReconnectInterval  time.Duration
+	MaxConnections     int           `json:"maxConnections"`
+	MaxChannelsPerConn int           `json:"maxChannelsPerConn"`
+	WaitTimeout        time.Duration `json:"waitTimeout"`
+	ReconnectInterval  time.Duration `json:"reconnectInterval"`
 }
 
 type ConnectionPool struct {
@@ -99,6 +99,7 @@ func (p *ConnectionPool) monitor() {
 	for {
 		select {
 		case <-p.ctx.Done():
+			log.Printf("close connection pool")
 			return
 		case <-ticker.C:
 			p.checkConnections()

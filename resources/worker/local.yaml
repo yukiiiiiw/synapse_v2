@@ -62,12 +62,12 @@ rabbitmq:
     pool:
       maxConnections: 5
       maxChannelsPerConn: 10
-      waitTimeoutSeconds: 30s
-      reconnectIntervalSeconds: 3s
+      waitTimeout: 30s
+      reconnectInterval: 3s
   producer:
     name: "producer0"
     retries: 0
-    retryIntervalSeconds: 2s
+    retryInterval: 2s
     exchanges:
       - name: "orders"
         type: "topic"
@@ -76,7 +76,7 @@ rabbitmq:
       - name: "payments"
         type: "direct"
         durable: true
-        
+
   consumers:
     - name: "order_consumer"
       queue: "order_queue"

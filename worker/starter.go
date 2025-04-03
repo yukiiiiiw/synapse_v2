@@ -48,7 +48,7 @@ func Start(ctx context.Context) error {
 	}()
 
 	// Initialize the producer
-	mq.InitProducer(&config.Config.RabbitMQConfig.Producer)
+	mq.InitProducer(ctx, &config.Config.RabbitMQConfig.Producer)
 
 	// Initialize the consumers
 	consumers := config.Config.RabbitMQConfig.Consumers

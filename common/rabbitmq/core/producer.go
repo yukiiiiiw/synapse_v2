@@ -11,15 +11,15 @@ import (
 )
 
 type ProducerConfig struct {
-	Exchanges     []ExchangeConfig
-	Retries       int
-	RetryInterval time.Duration
+	Exchanges     []ExchangeConfig `json:"exchanges"`
+	Retries       int              `json:"retries"`
+	RetryInterval time.Duration    `json:"retryInterval"`
 }
 
 type ExchangeConfig struct {
-	Name    string
-	Type    string
-	Durable bool
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Durable bool   `json:"durable"`
 }
 
 type Producer struct {
