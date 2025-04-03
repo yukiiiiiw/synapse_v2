@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
+	"reflect"
 )
 
 var (
@@ -69,29 +70,87 @@ func (r *BaseRepo[T]) Update(item T) error {
 }
 
 func (r *BaseRepo[T]) VersionSave(v schema.Tabler) error {
-	tx := r.DB.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}},
-		Where: clause.Where{
-			Exprs: []clause.Expression{
-				clause.Expr{SQL: v.TableName() + ".version = excluded.version - 1"},
+	version := getVersion(v)
+	var tx *gorm.DB
+
+	if version > 0 {
+		// For records with version > 0, use optimistic locking
+		tx = r.DB.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "id"}},
+			Where: clause.Where{
+				Exprs: []clause.Expression{
+					clause.Expr{SQL: v.TableName() + ".version = excluded.version - 1"},
+				},
 			},
-		},
-		UpdateAll: true,
-	}).Create(v)
+			UpdateAll: true,
+		}).Create(v)
+	} else {
+		// For records with version = 0, update without version check
+		tx = r.DB.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			UpdateAll: true,
+		}).Create(v)
+	}
 	return CheckUpdateWithRowsAffected(tx, 1)
 }
 
 func (r *BaseRepo[T]) BatchVersionSave(values []T, tableName string) error {
-	tx := r.DB.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}},
-		Where: clause.Where{
-			Exprs: []clause.Expression{
-				clause.Expr{SQL: tableName + ".version = excluded.version - 1"},
+	// Split records into two groups: save or update by version
+	var versionedValues []T
+	var unversionedValues []T
+
+	for _, v := range values {
+		if getVersion(v) > 0 {
+			versionedValues = append(versionedValues, v)
+		} else {
+			unversionedValues = append(unversionedValues, v)
+		}
+	}
+
+	var tx *gorm.DB
+	var err error
+
+	// Process records with version > 0
+	if len(versionedValues) > 0 {
+		tx = r.DB.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "id"}},
+			Where: clause.Where{
+				Exprs: []clause.Expression{
+					clause.Expr{SQL: tableName + ".version = excluded.version - 1"},
+				},
 			},
-		},
-		UpdateAll: true,
-	}).Create(&values)
-	return CheckUpdateWithRowsAffected(tx, len(values)*2)
+			UpdateAll: true,
+		}).Create(&versionedValues)
+		if err = CheckUpdateWithRowsAffected(tx, len(versionedValues)); err != nil {
+			return err
+		}
+	}
+
+	// Process records with version = 0
+	if len(unversionedValues) > 0 {
+		tx = r.DB.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			UpdateAll: true,
+		}).Create(&unversionedValues)
+		if err = CheckUpdateWithRowsAffected(tx, len(unversionedValues)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getVersion gets the version field value of a struct
+func getVersion(v interface{}) int {
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	versionField := val.FieldByName("Version")
+	if !versionField.IsValid() {
+		return 0
+	}
+	return int(versionField.Int())
 }
 
 func (r *BaseRepo[T]) DeleteByID(id uint64) error {

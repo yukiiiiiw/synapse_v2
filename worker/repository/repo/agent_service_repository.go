@@ -19,7 +19,7 @@ func (r *AgentServiceRepository) FindBySaasPodID(saasPodID int64) (*entity.Agent
 	return CheckFound(record, err)
 }
 
-func (r *AgentServiceRepository) FindByAgentID(agentID string) ([]*entity.AgentServiceInfo, error) {
+func (r *AgentServiceRepository) FindByAgentID(agentID int64) ([]*entity.AgentServiceInfo, error) {
 	var records []*entity.AgentServiceInfo
 	err := r.DB.Where("agent_id = ?", agentID).Find(&records).Error
 	return records, err

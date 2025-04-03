@@ -23,7 +23,6 @@ func (r *AgentNodeRepository) SaveOrUpdate(node *entity.AgentNodeInfo) error {
 	return r.DB.Save(node).Error
 }
 
-// FindByAgentIDAndNodeIDs finds all nodes by agent ID and node IDs
 func (r *AgentNodeRepository) FindByAgentIDAndNodeIDs(agentID string, nodeIDs []string) ([]*entity.AgentNodeInfo, error) {
 	var nodes []*entity.AgentNodeInfo
 	err := r.DB.Where("agent_id = ? AND agent_node_id IN ?", agentID, nodeIDs).Find(&nodes).Error

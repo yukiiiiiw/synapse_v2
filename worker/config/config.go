@@ -39,6 +39,7 @@ type ServiceConfig struct {
 type AgentNodeConfig struct {
 	BusyThreshold    float64       `yaml:"busyThreshold" json:"busyThreshold"`
 	HeartbeatTimeout time.Duration `yaml:"heartbeatTimeout" json:"heartbeatTimeout"`
+	ScheduleTimeout  time.Duration `yaml:"scheduleTimeout" json:"scheduleTimeout"`
 }
 
 type RabbitMQConfig struct {

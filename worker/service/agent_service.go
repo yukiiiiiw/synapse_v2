@@ -30,13 +30,30 @@ func NewAgentService(db *gorm.DB) *AgentService {
 }
 
 func (svc *AgentService) Register(ctx context.Context, req *types.AgentRegisterRequest) error {
+	// Check if reconnected
+	agentInfoRepo := repo.NewAgentInfoRepository(svc.db.WithContext(ctx))
+	_, exist, _ := agentInfoRepo.FindByAgentID(req.Agent.ID)
+	if exist {
+		// TODO alert
+	}
+
+	// Handling report
+	reportReq := &types.AgentReportRequest{Agent: req.Agent}
+	err := svc.HandleAgentReport(ctx, reportReq)
+	if err != nil {
+		log.Log.Errorw("Error handling agentReport:", "error", err)
+	}
+	return nil
+}
+
+func (svc *AgentService) HandleAgentReport(ctx context.Context, req *types.AgentReportRequest) error {
 	// TODO redisLock
 
 	now := time.Now().UTC().UnixMilli()
-	lastHeartBeat := int64(utils.ParseInt(req.Agent.MetricTimestamp))
+	lastHeartBeat := req.Agent.MetricTimestamp
 	timeOut := config.Config.AgentNode.HeartbeatTimeout
 	if now-lastHeartBeat > timeOut.Milliseconds() {
-		log.Log.Infow("register expired, ignored:", req)
+		log.Log.Infow("register expired, ignored:", "AgentReportRequest", req)
 		return nil
 	}
 
@@ -56,6 +73,7 @@ func (svc *AgentService) Register(ctx context.Context, req *types.AgentRegisterR
 	if !exist {
 		agentInfo = svc.buildAgentInfo(&req.Agent, now, lastHeartBeat)
 	} else {
+		agentInfo.Version += 1
 		agentInfo.LastHeartBeat = lastHeartBeat
 		agentInfo.UpdatedAt = now
 	}
@@ -72,6 +90,8 @@ func (svc *AgentService) Register(ctx context.Context, req *types.AgentRegisterR
 		resourceMD5s = append(resourceMD5s, resourceMD5)
 		nodeByID[node.ID] = &node
 		resourceMD5ByNodeID[node.ID] = resourceMD5
+
+		// TODO assemble and send msg to report-service-info-mq
 	}
 
 	// Batch query existing nodes and resources
@@ -115,6 +135,7 @@ func (svc *AgentService) Register(ctx context.Context, req *types.AgentRegisterR
 		} else if existingResource, exists := resourceMap[resourceMD5]; exists {
 			resourceInfo = existingResource
 			resourceInfo.UpdatedAt = now
+			resourceInfo.Version += 1
 		} else {
 			resourceInfo = svc.buildAgentNodeResource(&req.Agent, node, resourceMD5, now)
 		}
@@ -125,6 +146,7 @@ func (svc *AgentService) Register(ctx context.Context, req *types.AgentRegisterR
 			nodeInfo = existingNode
 			nodeInfo.LastHeartBeat = now
 			nodeInfo.UpdatedAt = now
+			nodeInfo.Version += 1
 		} else {
 			nodeInfo = svc.buildAgentNodeInfo(&req.Agent, node, now, lastHeartBeat, resourceInfo.ID)
 		}
@@ -202,7 +224,7 @@ func (svc *AgentService) buildAgentNodeInfo(agent *types.Agent, node *types.Node
 		AgentID:          agent.ID,
 		AgentNodeID:      node.ID,
 		NodeStatus:       int(enum.Common_Status_Available),
-		ResourceType:     utils.ParseInt(node.ResourceType),
+		ResourceType:     node.ResourceType,
 		MetricInfo:       node,
 		ResourceFreeInfo: resourceFreeInfo,
 		Location:         agent.Location,
@@ -223,7 +245,7 @@ func (svc *AgentService) buildAgentNodeResource(agent *types.Agent, node *types.
 	return &entity.AgentNodeResource{
 		ID:                  util.GetNextId(),
 		Status:              common.StatusSuccess,
-		ResourceType:        utils.ParseInt(node.ResourceType),
+		ResourceType:        node.ResourceType,
 		Location:            agent.Location,
 		Region:              agent.Region,
 		GPUType:             node.GPUType,
@@ -278,7 +300,7 @@ func (svc *AgentService) CalculateResourceMD5(agent *types.Agent, node *types.No
 	fields := []string{
 		agent.Location,
 		agent.Region,
-		node.ResourceType,
+		strconv.Itoa(node.ResourceType),
 		node.GPUType,
 		node.DriverVersion,
 		node.TotalGPUCount,
