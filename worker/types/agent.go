@@ -1,5 +1,7 @@
 package types
 
+import "synapse/common/enum"
+
 type AgentRegisterRequest struct {
 	Agent Agent `json:"agent"`
 }
@@ -8,20 +10,28 @@ type AgentReportRequest struct {
 	Agent Agent `json:"agent"`
 }
 
+type ServiceReportRequest struct {
+	AgentID         int64   `json:"agent_id"`
+	MetricTimestamp int64   `json:"metric_timestamp"`
+	ResourceType    int64   `json:"resource_type"`
+	GPUType         string  `json:"gpu_type"`
+	Service         Service `json:"service"`
+}
+
 type Agent struct {
 	ID              string `json:"id"`
 	Name            string `json:"name"`
 	Location        string `json:"location"`
 	Region          string `json:"region"`
 	CloudType       string `json:"cloud_type"`
-	MetricTimestamp string `json:"metric_timestamp"`
+	MetricTimestamp int64  `json:"metric_timestamp"`
 	Nodes           []Node `json:"nodes"`
 }
 
 type Node struct {
 	ID                        string    `json:"id"`
 	Name                      string    `json:"name"`
-	ResourceType              string    `json:"resource_type"`
+	ResourceType              int       `json:"resource_type"`
 	IP                        string    `json:"ip"`
 	DriverVersion             string    `json:"driver_version"`
 	NetworkUpload             string    `json:"network_upload"`
@@ -51,38 +61,52 @@ type Node struct {
 }
 
 type Service struct {
-	Name                      string  `json:"name"`
-	Namespace                 string  `json:"namespace"`
-	Image                     string  `json:"image"`
-	AllocatedGPUCount         string  `json:"allocated_gpu_count"`
-	AllocatedVCPU             string  `json:"allocated_vcpu"`
-	AllocatedVRAM             string  `json:"allocated_vram"`
-	AllocatedRAM              string  `json:"allocated_ram"`
-	AllocatedCPU              string  `json:"allocated_cpu"`
-	AllocatedMemory           string  `json:"allocated_memory"`
-	AllocatedStorage          string  `json:"allocated_storage"`
-	AllocatedPersistentVolume string  `json:"allocated_persistent_volume"`
-	ClusterIP                 string  `json:"cluster_ip"`
-	ExternalIP                string  `json:"external_ip"`
-	VPC                       string  `json:"vpc"`
-	Ingress                   Ingress `json:"ingress"`
-	Ports                     []Port  `json:"ports"`
-	Status                    string  `json:"status"`
-	StartAt                   string  `json:"start_at"`
+	ID                     int64         `json:"id"`
+	Name                   string        `json:"name"`
+	Namespace              string        `json:"namespace"`
+	Image                  string        `json:"image"`
+	AllocatedGPUCount      string        `json:"allocated_gpu_count"`
+	AllocatedVCPU          string        `json:"allocated_vcpu"`
+	AllocatedVRAM          string        `json:"allocated_vram"`
+	AllocatedRAM           string        `json:"allocated_ram"`
+	AllocatedCPU           string        `json:"allocated_cpu"`
+	AllocatedMemory        string        `json:"allocated_memory"`
+	AllocatedStorage       string        `json:"allocated_storage"`
+	ContainerVolumeMounts  []VolumeMount `json:"container_volume_mounts"`
+	PersistentVolumeMounts []VolumeMount `json:"persistent_volume_mounts"`
+	ClusterIP              string        `json:"cluster_ip"`
+	ExternalIP             string        `json:"external_ip"`
+	Ingress                IngressConfig `json:"ingress"`
+	Ports                  []PortConfig  `json:"ports"`
+	SSH                    SSHConfig     `json:"ssh"`
+	Status                 int           `json:"status"`
+	StartAt                int64         `json:"start_at"`
 }
 
-type Ingress struct {
+type VolumeMount struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mount_path"`
+	Volume    string `json:"volume"`
+}
+
+type IngressConfig struct {
 	Host        string            `json:"host"`
 	TLS         bool              `json:"tls"`
 	Path        string            `json:"path"`
 	Annotations map[string]string `json:"annotations"`
 }
 
-type Port struct {
+type PortConfig struct {
 	Protocol   string `json:"protocol"`
 	Port       int    `json:"port"`
 	TargetPort int    `json:"target_port"`
 	NodePort   int    `json:"node_port"`
+}
+
+type SSHConfig struct {
+	User string `json:"user"`
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 type AgentNodeResourceResponse struct {
@@ -110,4 +134,41 @@ type AgentNodeResourceListResponse struct {
 	PageMark string                      `json:"page_mark"`
 	HasMore  bool                        `json:"has_more"`
 	Total    int64                       `json:"total"`
+}
+
+type ServiceInfo struct {
+	AgentID                int64         `json:"agent_id"`
+	ResourceType           int           `json:"resource_type"`
+	GPUType                string        `json:"gpu_type"`
+	Image                  string        `json:"image"`
+	AllocatedGPUCount      string        `json:"allocated_gpu_count"`
+	AllocatedVCPU          string        `json:"allocated_vcpu"`
+	AllocatedVRAM          string        `json:"allocated_vram"`
+	AllocatedRAM           string        `json:"allocated_ram"`
+	AllocatedCPU           string        `json:"allocated_cpu"`
+	AllocatedMemory        string        `json:"allocated_memory"`
+	AllocatedStorage       string        `json:"allocated_storage"`
+	ContainerVolumeMounts  []VolumeMount `json:"container_volume_mounts"`
+	PersistentVolumeMounts []VolumeMount `json:"persistent_volume_mounts"`
+	ClusterIP              string        `json:"cluster_ip"`
+	ExternalIP             string        `json:"external_ip"`
+	Ingress                IngressConfig `json:"ingress"`
+	Ports                  []PortConfig  `json:"ports"`
+	SSH                    SSHConfig     `json:"ssh"`
+}
+
+type AgentFilterRequest struct {
+	Region                 string            `json:"region" binding:"required"`
+	CloudType              enum.CloudType    `json:"cloudType" binding:"required"`
+	ResourceType           enum.ResourceType `json:"resourceType" binding:"required"`
+	GPUType                string            `json:"gpu_type"`
+	GPUCount               string            `json:"allocated_gpu_count"`
+	VCPU                   string            `json:"allocated_vcpu"`
+	VRAM                   string            `json:"allocated_vram"`
+	RAM                    string            `json:"allocated_ram"`
+	CPU                    string            `json:"allocated_cpu"`
+	Memory                 string            `json:"allocated_memory"`
+	Storage                string            `json:"allocated_storage"`
+	ContainerVolumeMounts  []VolumeMount     `json:"container_volume_mounts"`
+	PersistentVolumeMounts []VolumeMount     `json:"persistent_volume_mounts"`
 }

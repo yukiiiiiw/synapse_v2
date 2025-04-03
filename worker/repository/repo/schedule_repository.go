@@ -50,7 +50,6 @@ func (r *ScheduleRepository) UpdateSchedule(ctx context.Context, info *entity.Ag
 		logRepo := NewServiceOperateLogRepository(tx)
 
 		// Update AgentServiceInfo with optimistic lock
-		info.Version += 1
 		if err := infoRepo.VersionSave(info); err != nil {
 			log.Log.Errorw("Failed to update agent service info",
 				"error", err,
@@ -60,15 +59,43 @@ func (r *ScheduleRepository) UpdateSchedule(ctx context.Context, info *entity.Ag
 
 		// Batch update ServiceOperateLog
 		if len(operateLogs) > 0 {
-			for _, operateLog := range operateLogs {
-				operateLog.Version += 1
-			}
 			if err := logRepo.BatchVersionSave(operateLogs, "service_operate_log"); err != nil {
 				log.Log.Errorw("Failed to update service operate log",
 					"error", err,
 					"saas_pod_id", info.SaasPodID)
 				return fmt.Errorf("failed to update service operate log: %w", err)
 			}
+		}
+
+		return nil
+	})
+}
+
+func (r *ScheduleRepository) UpdateOperateCompleted(service *entity.AgentServiceInfo, operateLog *entity.ServiceOperateLog) error {
+	operateLog.CompletedAt = service.UpdatedAt
+	operateLog.UpdatedAt = service.UpdatedAt
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Create repositories with transaction
+		serviceRepo := NewAgentServiceRepository(tx)
+		logRepo := NewServiceOperateLogRepository(tx)
+
+		// Update service with optimistic lock
+		service.Version += 1
+		if err := serviceRepo.VersionSave(service); err != nil {
+			log.Log.Errorw("Failed to update agent service",
+				"error", err,
+				"serviceID", service.ID)
+			return fmt.Errorf("failed to update agent service: %w", err)
+		}
+
+		// Update operate log with optimistic lock
+		operateLog.Version += 1
+		if err := logRepo.VersionSave(operateLog); err != nil {
+			log.Log.Errorw("Failed to update service operate log",
+				"error", err,
+				"operateLogID", operateLog.ID)
+			return fmt.Errorf("failed to update service operate log: %w", err)
 		}
 
 		return nil

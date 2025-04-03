@@ -1,9 +1,9 @@
 package enum
 
 // ResourceType the resource type.
-type ResourceType string
+type ResourceType int
 
 const (
-	Resource_Type_GPU ResourceType = "GPU"
-	Resource_Type_CPU ResourceType = "CPU"
+	ResourceTypeGPU ResourceType = 0
+	ResourceTypeCPU ResourceType = 1
 )

@@ -1,6 +1,6 @@
 -- Create schedule schema
 CREATE SCHEMA IF NOT EXISTS schedule;
-set serach_path to schedule;
+SET search_path TO schedule;
 
 -- Resource PV and SKU per node
 CREATE TABLE schedule.agent_node_resource (
@@ -32,19 +32,20 @@ CREATE TABLE schedule.agent_node_resource (
     version INTEGER NOT NULL
 );
 
-COMMENT ON TABLE schedule.agent_node_resource IS 'Resource PV and SKU per node';
-COMMENT ON COLUMN schedule.agent_node_resource.status IS '0:unavailable 1:available';
-COMMENT ON COLUMN schedule.agent_node_resource.resource_type IS 'GPU, CPU';
-COMMENT ON COLUMN schedule.agent_node_resource.gpu_type IS 'G4090';
-COMMENT ON COLUMN schedule.agent_node_resource.max_gpu_count IS 'Node GPU count';
-COMMENT ON COLUMN schedule.agent_node_resource.max_vcpu IS 'Node video CPU';
-COMMENT ON COLUMN schedule.agent_node_resource.max_vram IS 'GB video RAM';
-COMMENT ON COLUMN schedule.agent_node_resource.max_ram IS 'GB RAM';
-COMMENT ON COLUMN schedule.agent_node_resource.max_persistent_volume IS 'GB node volume';
-COMMENT ON COLUMN schedule.agent_node_resource.resource_md5 IS 'md5(resource_type:gpu_type:max_gpu_count:...:disk_price)';
-COMMENT ON COLUMN schedule.agent_node_resource.version IS 'Optimistic Locking';
+COMMENT ON TABLE schedule.agent_node_resource IS 'Node resource specifications (GPU/CPU)';
+COMMENT ON COLUMN schedule.agent_node_resource.cloud_type IS 'cloudType： 0-Secure, 1-Community';
+COMMENT ON COLUMN schedule.agent_node_resource.status IS 'Status: 0-unavailable, 1-available';
+COMMENT ON COLUMN schedule.agent_node_resource.resource_type IS 'Resource type: 1-GPU, 2-CPU';
+COMMENT ON COLUMN schedule.agent_node_resource.gpu_type IS 'GPU model (e.g., NVIDIA A100)';
+COMMENT ON COLUMN schedule.agent_node_resource.max_gpu_count IS 'Maximum GPU count per node';
+COMMENT ON COLUMN schedule.agent_node_resource.max_vcpu IS 'Maximum virtual CPU cores per node';
+COMMENT ON COLUMN schedule.agent_node_resource.max_vram IS 'Maximum video memory (VRAM) capacity in GB';
+COMMENT ON COLUMN schedule.agent_node_resource.max_ram IS 'Maximum RAM capacity in GB';
+COMMENT ON COLUMN schedule.agent_node_resource.max_persistent_volume IS 'Persistent storage capacity in GB';
+COMMENT ON COLUMN schedule.agent_node_resource.resource_md5 IS 'Unique resource identifier MD5(resource_type:gpu_type:max_gpu_count:...)';
+COMMENT ON COLUMN schedule.agent_node_resource.version IS 'Optimistic lock version number';
 
--- All nodes
+-- Node information table
 CREATE TABLE schedule.agent_node_info (
     id BIGSERIAL PRIMARY KEY,
     agent_id VARCHAR(255) NOT NULL,
@@ -116,13 +117,13 @@ CREATE UNIQUE INDEX udx_agent_id ON schedule.agent_info USING btree (agent_id);
 CREATE TABLE schedule.agent_service_info (
     id BIGINT NOT NULL PRIMARY KEY,
     saas_pod_id varchar(255) NOT NULL, -- saas podId as k8s service name
-    
+
     agent_id varchar(255) NULL, -- k8s clusterId, strategy hit asynced
     service_name varchar(255) NULL, -- k8s service name
     service_info jsonb NULL, -- k8s service config (image,ip,port,gpu,cpu,disk...)
     metric_info jsonb NULL, -- pod realtime metric info (nodePort ingress pv http/tcp)
-    
-    status integer NOT NULL, -- -1:failure 0:deploying 10:updating 11:deleting 12:pausing 20:running 21:deleted 22:paused 
+
+    status integer NOT NULL, -- -1:failure 0:deploying 10:updating 11:deleting 12:pausing 20:running 21:deleted 22:paused
     created_at bigint NOT NULL,
     updated_at bigint NULL,
     service_updated_at bigint NULL,
@@ -139,7 +140,7 @@ CREATE TABLE IF NOT EXISTS schedule.service_operate_log (
     service_info_id BIGINT NOT NULL,
     saas_pod_id varchar(255) NOT NULL,
     schedule_info jsonb NOT NULL,  -- saas required resources
-    
+
     operate_type integer NOT NULL, -- operator type 0:deploy 1:update 2:delete 3:pause 4:resume 5:restart
     status integer NOT NULL, -- operator status 0:init 1:completed
     created_at bigint NOT NULL,
@@ -154,7 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_service_operate_log_saas_pod_id ON schedule.servi
 
 -- Strategy
 CREATE TABLE schedule.route_rule (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     rule_code VARCHAR(100) UNIQUE,
     description VARCHAR(255),
     enabled BOOLEAN DEFAULT true,
@@ -169,7 +170,7 @@ COMMENT ON COLUMN schedule.route_rule.rule_code IS 'config_match, resource_score
 COMMENT ON COLUMN schedule.route_rule.version IS 'Optimistic Locking';
 
 CREATE TABLE schedule.route_chain (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT PRIMARY KEY,
     chain_name VARCHAR(100) UNIQUE,
     resource_type INTEGER NOT NULL,
     rules JSONB,
